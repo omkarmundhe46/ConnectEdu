@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+			  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			  xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+			  name="certificate"
+			  language="java"
+			  pageWidth="900"
+			  pageHeight="600"
+			  orientation="Landscape"
+			  columnWidth="860"
+			  leftMargin="20"
+			  rightMargin="20"
+			  topMargin="20"
+			  bottomMargin="20">
+
+	<parameter name="userName" class="java.lang.String"/>
+	<parameter name="eventName" class="java.lang.String"/>
+	<parameter name="eventDate" class="java.lang.String"/>
+	<parameter name="backgroundImage" class="java.io.InputStream"/>
+	<parameter name="logoImage" class="java.io.InputStream"/>
+	<parameter name="aImage" class="java.io.InputStream"/>
+
+	<queryString><![CDATA[]]></queryString>
+
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+
+	<detail>
+		<band height="550" splitType="Stretch">
+			<!-- Background Image (increased width) -->
+			<image>
+				<reportElement x="0" y="0" width="860" height="487"/>
+				<imageExpression><![CDATA[$P{backgroundImage}]]></imageExpression>
+			</image>
+
+			<!-- College Name -->
+			<staticText>
+				<reportElement x="129" y="26" width="710" height="90" forecolor="#FCFCFC"/>
+				<textElement>
+					<font fontName="Algerian" size="25"/>
+				</textElement>
+				<text><![CDATA[DR. J. J. MAGDUM COLLEGE OF ENGINEERING, JAYSINGPUR.]]></text>
+			</staticText>
+
+			<!-- College Details -->
+			<staticText>
+				<reportElement x="129" y="61" width="661" height="20" forecolor="#FCF7F7"/>
+				<textElement>
+					<font size="14"/>
+				</textElement>
+				<text><![CDATA[Approved by AICTE, New Delhi | Affiliated to Shivaji University, Kolhapur]]></text>
+			</staticText>
+
+			<staticText>
+				<reportElement x="129" y="81" width="640" height="20" forecolor="#FFFAFA"/>
+				<textElement>
+					<font size="14"/>
+				</textElement>
+				<text><![CDATA[NAAC "A" Grade Accredited Institute | ISO 21001:2018 Certified]]></text>
+			</staticText>
+
+			<!-- Department -->
+			<staticText>
+				<reportElement x="210" y="101" width="439" height="30" forecolor="#FAF5F5"/>
+				<textElement>
+					<font fontName="Arial" size="18"/>
+				</textElement>
+				<text><![CDATA[Department Of INFORMATION TECHNOLOGY]]></text>
+			</staticText>
+
+			<!-- Certificate Title -->
+			<staticText>
+				<reportElement x="280" y="251" width="300" height="30"/>
+				<textElement>
+					<font fontName="Arial" size="15"/>
+				</textElement>
+				<text><![CDATA[P R O U D L Y   P R E S E N T E D   T O]]></text>
+			</staticText>
+
+			<!-- User Information -->
+			<staticText>
+				<reportElement x="50" y="281" width="320" height="30"/>
+				<textElement>
+					<font fontName="Times New Roman" size="22"/>
+				</textElement>
+				<text><![CDATA[This is to certify that, Mr. / Miss.]]></text>
+			</staticText>
+
+			<textField>
+				<reportElement x="370" y="281" width="300" height="30"/>
+				<textElement>
+					<font fontName="Arial Rounded MT Bold" size="22"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{userName}]]></textFieldExpression>
+			</textField>
+
+			<staticText>
+				<reportElement x="670" y="281" width="180" height="30"/>
+				<textElement>
+					<font fontName="Times New Roman" size="22"/>
+				</textElement>
+				<text><![CDATA[of IT Department]]></text>
+			</staticText>
+
+			<!-- Event Information -->
+			<staticText>
+				<reportElement x="80" y="311" width="230" height="30"/>
+				<textElement>
+					<font fontName="Times New Roman" size="22"/>
+				</textElement>
+				<text><![CDATA[has participated in the]]></text>
+			</staticText>
+
+			<textField>
+				<reportElement x="300" y="311" width="420" height="30"/>
+				<textElement>
+					<font fontName="Arial Rounded MT Bold" size="22"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{eventName}]]></textFieldExpression>
+			</textField>
+
+			<staticText>
+				<reportElement x="700" y="311" width="100" height="30"/>
+				<textElement>
+					<font fontName="Times New Roman" size="22"/>
+				</textElement>
+				<text><![CDATA[held at]]></text>
+			</staticText>
+
+			<staticText>
+				<reportElement x="50" y="341" width="540" height="30"/>
+				<textElement>
+					<font fontName="Times New Roman" size="22"/>
+				</textElement>
+				<text><![CDATA[DR. J. J. MAGDUM COLLEGE OF ENGINEERING on]]></text>
+			</staticText>
+
+			<textField>
+				<reportElement x="580" y="341" width="270" height="30"/>
+				<textElement>
+					<font fontName="Arial Rounded MT Bold" size="22"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{eventDate}]]></textFieldExpression>
+			</textField>
+
+			<!-- Trust Name -->
+			<staticText>
+				<reportElement x="270" y="11" width="300" height="26" forecolor="#FCF7F7"/>
+				<textElement textAlignment="Center">
+					<font fontName="Algerian" size="15"/>
+				</textElement>
+				<text><![CDATA[DR. J. J. MAGDUM TRUST'S]]></text>
+			</staticText>
+
+			<!-- College Logo -->
+			<image>
+				<reportElement x="20" y="11" width="109" height="100"/>
+				<imageExpression><![CDATA[$P{logoImage}]]></imageExpression>
+			</image>
+
+			<!-- A Image -->
+			<image>
+				<reportElement x="370" y="141" width="110" height="120"/>
+				<imageExpression><![CDATA[$P{aImage}]]></imageExpression>
+			</image>
+
+			<!-- Signature Section (Without Images) -->
+			<!-- Coordinator -->
+			<staticText>
+				<reportElement x="40" y="420" width="150" height="30"/>
+				<textElement>
+					<font fontName="Lucida Sans" size="18" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Prof. P. R. Patil]]></text>
+			</staticText>
+
+			<staticText>
+				<reportElement x="40" y="450" width="150" height="20"/>
+				<textElement textAlignment="Center">
+					<font fontName="Times New Roman" size="15"/>
+				</textElement>
+				<text><![CDATA[Club Coordinator]]></text>
+			</staticText>
+
+			<!-- HOD IT -->
+			<staticText>
+				<reportElement x="220" y="420" width="180" height="30"/>
+				<textElement>
+					<font fontName="Lucida Sans" size="18" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Prof. R. A. Bhartiya]]></text>
+			</staticText>
+
+			<staticText>
+				<reportElement x="220" y="450" width="150" height="20"/>
+				<textElement textAlignment="Center">
+					<font fontName="Times New Roman" size="15"/>
+				</textElement>
+				<text><![CDATA[HOD IT]]></text>
+			</staticText>
+
+			<!-- Committee Head -->
+			<staticText>
+				<reportElement x="420" y="420" width="160" height="30"/>
+				<textElement>
+					<font fontName="Lucida Sans" size="18" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Prof. P. R. Patil]]></text>
+			</staticText>
+
+			<staticText>
+				<reportElement x="420" y="450" width="150" height="20"/>
+				<textElement textAlignment="Center">
+					<font fontName="Times New Roman" size="15"/>
+				</textElement>
+				<text><![CDATA[Committee Head]]></text>
+			</staticText>
+
+			<!-- Principal -->
+			<staticText>
+				<reportElement x="620" y="420" width="160" height="30"/>
+				<textElement>
+					<font fontName="Lucida Sans" size="18" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Dr. G. V. Mulgund]]></text>
+			</staticText>
+
+			<staticText>
+				<reportElement x="620" y="450" width="150" height="20"/>
+				<textElement textAlignment="Center">
+					<font fontName="Times New Roman" size="15"/>
+				</textElement>
+				<text><![CDATA[Principal]]></text>
+			</staticText>
+
+		</band>
+	</detail>
+</jasperReport>

@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/campusconnect_notificationdb
+    username: root
+    password: Vbcd@123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:connectedu8@gmail.com}
+    password: ${MAIL_PASSWORD:kcjo fimn twjh mlvk}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+server:
+  port: 8085
+
+notify:
+  default-from: no-reply@campusconnect.example.com
+
+USER_SERVICE_URL: http://localhost:8081
+CLUB_SERVICE_URL: http://localhost:8082
+EVENT_SERVICE_URL: http://localhost:8083

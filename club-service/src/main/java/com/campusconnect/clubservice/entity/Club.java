@@ -1,0 +1,47 @@
+package com.campusconnect.clubservice.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Entity
+@Table(name = "clubs")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString(exclude = {"members", "events"})
+public class Club {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String name;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String description;
+    
+    @Column(nullable = false)
+    private Long adminId;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "club", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ClubMember> members;
+
+    @OneToMany(mappedBy = "clubId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Event> events;
+}
