@@ -2,9 +2,9 @@ spring:
   application:
     name: discussion-service
   datasource:
-    url: jdbc:mysql://localhost:3306/club_discussion_db
+    url: jdbc:mysql://localhost:3306/discussion
     username: root
-    password: Vbcd@123
+    password: OMKARm*@46!
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:

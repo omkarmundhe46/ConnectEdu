@@ -49,8 +49,8 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
-    @Enumerated(EnumType.STRING)
-    private Role roles;
+//    @Enumerated(EnumType.STRING)
+//    private Role roles;
 
     @OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ClubMembership> clubMemberships;

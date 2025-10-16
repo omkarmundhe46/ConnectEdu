@@ -20,22 +20,4 @@ public class UserServiceApplication {
 		SpringApplication.run(UserServiceApplication.class, args);
 	}
 
-	@Bean
-	public CommandLineRunner createDefaultAdmin(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-		return args -> {
-			String adminEmail = "admin@college.com";
-			userRepository.findByEmail(adminEmail).orElseGet(() -> {
-				User admin = User.builder().name("College Admin") // required field
-						.email(adminEmail) // required field
-						.password(passwordEncoder.encode("admin123")) // encrypted
-						.department("Administration") 
-						.roles(Role.ADMIN) 
-						.provider("LOCAL") 
-						.providerId(null) 
-						.build();
-				return userRepository.save(admin);
-			});
-		};
-	}
-
 }

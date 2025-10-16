@@ -28,8 +28,8 @@ public class Club {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
     
-    @Column(nullable = false)
-    private Long adminId;
+//    @Column(nullable = false)
+//    private Long adminId;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

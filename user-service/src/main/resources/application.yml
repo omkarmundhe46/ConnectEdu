@@ -3,9 +3,9 @@ spring:
     name: user-service
 
   datasource:
-    url: jdbc:mysql://localhost:3306/campusconnect_userdb
+    url: jdbc:mysql://localhost:3306/user
     username: root
-    password: Vbcd@123
+    password: OMKARm*@46!
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -16,28 +16,28 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: your-google-client-id
-            client-secret: your-google-client-secret
-            scope:
-              - email
-              - profile
-          github:
-            client-id: your-github-client-id
-            client-secret: your-github-client-secret
+#  security:
+#    oauth2:
+#      client:
+#        registration:
+#          google:
+#            client-id: your-google-client-id
+#            client-secret: your-google-client-secret
+#            scope:
+#              - email
+#              - profile
+#          github:
+#            client-id: your-github-client-id
+#            client-secret: your-github-client-secret
 
 server:
   port: 8081   
 
-app:
-  token:
-    ttl-hours: 72  # Token expiry in hours
-  google:
-    tokeninfo-url: https://oauth2.googleapis.com/tokeninfo  # URL for token info validation
+#app:
+#  token:
+#    ttl-hours: 72  # Token expiry in hours
+#  google:
+#    tokeninfo-url: https://oauth2.googleapis.com/tokeninfo  # URL for token info validation
 
 logging:
   level:

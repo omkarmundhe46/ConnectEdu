@@ -6,13 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-//@Repository
-//public interface NotificationRequestRepository extends JpaRepository<NotificationRequest, Long> {
-//    Optional<NotificationRequest> findByRequestId(String requestId);
-//    boolean existsByRequestId(String requestId);
-//	boolean existsByNotificationTypeAndUserIdAndEventId(String string, Long userId, Long eventId);
-//}
-
 @Repository
 public interface NotificationRequestRepository extends JpaRepository<NotificationRequest, Long> {
 

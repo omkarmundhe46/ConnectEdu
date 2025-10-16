@@ -80,68 +80,6 @@ public class NotificationService {
 		}
 	}
 
-	/**
-	 * Notify club members when a new event is created
-	 */
-//	public NotificationResponse notifyEventCreated(EventResponseDto eventDto) {
-//		// ✅ Build EventCreatedNotifyRequest inside notification-service
-//		EventCreatedNotifyRequest request = new EventCreatedNotifyRequest();
-//		request.setRequestId("event-created-" + eventDto.getId()); // auto-generate requestId
-//		request.setEventId(eventDto.getId());
-//		request.setTitle(eventDto.getName());
-//		request.setDescription(eventDto.getDescription());
-//		request.setStartDate(eventDto.getDate());
-//		request.setLocation(eventDto.getLocation());
-//		request.setClubId(eventDto.getClubId());
-//
-//		// 🔽 reuse your old logic (send to all club members)
-//		if (requestRepository.existsByRequestId(request.getRequestId())) {
-//			NotificationRequest existing = requestRepository.findByRequestId(request.getRequestId()).get();
-//			NotificationResponse response = new NotificationResponse();
-//			response.setDetails("notifications already processed");
-//			response.setEnqueueCount(existing.getProcessedCount());
-//			return response;
-//		}
-//
-//		try {
-//			List<ClubMemberDto> members = clubClient.getClubMembers(request.getClubId());
-//			int count = 0;
-//
-//			for (ClubMemberDto member : members) {
-//				try {
-//					UserDto user = userClient.getUser(member.getUserId());
-//					Map<String, Object> variables = new HashMap<>();
-//					variables.put("name", user.getName());
-//					variables.put("eventTitle", request.getTitle());
-//					variables.put("eventDate",
-//							request.getStartDate() != null ? request.getStartDate().toString() : "TBD");
-//					variables.put("location", request.getLocation());
-//					variables.put("clubName", "Club");
-//
-//					sendNotificationAsync("EVENT_CREATED", user.getEmail(), variables, user.getId());
-//					count++;
-//				} catch (FeignException.NotFound e) {
-//					log.warn("User not found for member: {}", member.getUserId());
-//				}
-//			}
-//
-//			NotificationRequest notificationRequest = new NotificationRequest();
-//			notificationRequest.setRequestId(request.getRequestId());
-//			notificationRequest.setNotificationType("EVENT_CREATED");
-//			notificationRequest.setProcessedCount(count);
-//			notificationRequest.setCreatedAt(LocalDateTime.now());
-//			requestRepository.save(notificationRequest);
-//
-//			NotificationResponse response = new NotificationResponse();
-//			response.setDetails("notifications enqueued");
-//			response.setEnqueueCount(count);
-//			return response;
-//
-//		} catch (FeignException.NotFound e) {
-//			throw new RuntimeException("Club not found with id: " + request.getClubId());
-//		}
-//	}
-
 	public NotificationResponse notifyEventCreated(EventResponseDto eventDto) {
 		String requestId = "event-created-" + eventDto.getId();
 

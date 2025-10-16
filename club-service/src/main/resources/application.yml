@@ -2,9 +2,9 @@ spring:
   application:
     name: club-service
   datasource:
-    url: jdbc:mysql://localhost:3306/campusconnect_clubdb
+    url: jdbc:mysql://localhost:3306/club
     username: root
-    password: Vbcd@123
+    password: OMKARm*@46!
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:

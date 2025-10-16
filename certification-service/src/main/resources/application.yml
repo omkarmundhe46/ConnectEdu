@@ -3,9 +3,9 @@ spring:
     name: certificate-service
 
   datasource:
-    url: jdbc:mysql://localhost:3306/campusconnect_certificatedb
+    url: jdbc:mysql://localhost:3306/certificate
     username: root
-    password: Vbcd@123
+    password: OMKARm*@46!
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -15,6 +15,17 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+
+  kafka:
+    producer:
+      bootstrap-servers: localhost:9092
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+      # Correctly indented properties block
+      properties:
+        # Prevents sending the class name in message headers, fixing the error
+        spring.json.add.type.headers: false
 
 server:
   port: 8086
