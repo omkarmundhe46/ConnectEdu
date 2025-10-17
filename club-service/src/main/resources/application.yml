@@ -13,6 +13,18 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+
+  # ADD THIS KAFKA SECTION
+  kafka:
+    producer:
+      bootstrap-servers: localhost:9092
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        # This sends plain JSON without Java type headers to prevent errors
+        spring.json.add.type.headers: false
+
+
 server:
   port: 8082
 

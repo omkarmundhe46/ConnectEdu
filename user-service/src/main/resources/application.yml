@@ -16,6 +16,16 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
+
+  kafka:
+    producer:
+      bootstrap-servers: localhost:9092
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        # This is crucial: it sends plain JSON without Java class headers.
+        spring.json.add.type.headers: false
+
 #  security:
 #    oauth2:
 #      client:
@@ -29,6 +39,9 @@ spring:
 #          github:
 #            client-id: your-github-client-id
 #            client-secret: your-github-client-secret
+
+
+
 
 server:
   port: 8081   

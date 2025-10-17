@@ -7,6 +7,7 @@ import com.campusconnect.eventservice.dto.ParticipantResponseDto;
 import com.campusconnect.eventservice.entity.Event;
 import com.campusconnect.eventservice.entity.EventParticipant;
 import com.campusconnect.eventservice.exception.*;
+import com.campusconnect.eventservice.kafka.EventKafkaProducer;
 import com.campusconnect.eventservice.repository.EventRepository;
 import com.campusconnect.eventservice.repository.EventParticipantRepository;
 import com.campusconnect.eventservice.client.CertificateClient;
@@ -31,8 +32,9 @@ public class EventService {
     
     private final EventRepository eventRepository;
     private final EventParticipantRepository participantRepository;
-    private final NotificationClient notificationClient;
+//    private final NotificationClient notificationClient;
     private final ClubClient clubClient;
+    private final EventKafkaProducer eventKafkaProducer; // ADD THIS
     private final UserClient userClient;
     private final CertificateClient certificateClient;
 
@@ -87,32 +89,66 @@ public class EventService {
         eventRepository.delete(event);
     }
 
+//    public ParticipantResponseDto addParticipantToEvent(Long clubId, Long eventId, EventParticipationDTO participantRequestDto) {
+//        Event event = eventRepository.findByIdAndClubId(eventId, clubId)
+//                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + eventId + " for club: " + clubId));
+//       log.info("Saving PArticipate in Repo");
+//
+//        // Validate user exists
+//        try {
+//            userClient.getUserById(participantRequestDto.getUserId());
+//        } catch (FeignException.NotFound e) {
+//            throw new UserNotFoundException("User not found with id: " + participantRequestDto.getUserId());
+//        }
+//
+//        if (participantRepository.existsByEventIdAndUserId(eventId, participantRequestDto.getUserId())) {
+//            throw new DuplicateParticipationException("User already participating in this event");
+//        }
+//
+//        EventParticipant participant = new EventParticipant();
+//        participant.setEventId(eventId);
+//        participant.setUserId(participantRequestDto.getUserId());
+//
+//        EventParticipant savedParticipant = participantRepository.save(participant);
+//        log.info("Participant saved: {}", savedParticipant);
+//        notificationClient.notifyEventParticipation(participantRequestDto);
+//        log.info("Event participation notification sent for user: {} in event: {}", participantRequestDto.getUserId(), eventId);
+//        return mapToParticipantResponseDto(savedParticipant);
+//    }
+
+
     public ParticipantResponseDto addParticipantToEvent(Long clubId, Long eventId, EventParticipationDTO participantRequestDto) {
         Event event = eventRepository.findByIdAndClubId(eventId, clubId)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + eventId + " for club: " + clubId));
-       log.info("Saving PArticipate in Repo");
-        
-        // Validate user exists
+
         try {
             userClient.getUserById(participantRequestDto.getUserId());
         } catch (FeignException.NotFound e) {
             throw new UserNotFoundException("User not found with id: " + participantRequestDto.getUserId());
         }
-        
+
         if (participantRepository.existsByEventIdAndUserId(eventId, participantRequestDto.getUserId())) {
             throw new DuplicateParticipationException("User already participating in this event");
         }
-        
+
         EventParticipant participant = new EventParticipant();
         participant.setEventId(eventId);
         participant.setUserId(participantRequestDto.getUserId());
-        
+
         EventParticipant savedParticipant = participantRepository.save(participant);
         log.info("Participant saved: {}", savedParticipant);
-        notificationClient.notifyEventParticipation(participantRequestDto);
-        log.info("Event participation notification sent for user: {} in event: {}", participantRequestDto.getUserId(), eventId);
+
+        // --- THIS IS THE FIX ---
+        // Before sending to Kafka, ensure the DTO has the correct eventId from the URL path.
+        participantRequestDto.setEventId(eventId);
+
+        // **MODIFIED PART**: Send notification via Kafka
+        eventKafkaProducer.sendEventParticipationNotification(participantRequestDto);
+        log.info("Event participation notification queued for user: {} in event: {}", participantRequestDto.getUserId(), eventId);
+
         return mapToParticipantResponseDto(savedParticipant);
     }
+
 
     public List<ParticipantResponseDto> getEventParticipants(Long clubId, Long eventId) {
         Event event = eventRepository.findByIdAndClubId(eventId, clubId)

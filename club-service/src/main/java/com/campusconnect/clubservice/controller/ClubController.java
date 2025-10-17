@@ -6,7 +6,8 @@ import com.campusconnect.clubservice.dto.ClubMemberAddedRequest;
 import com.campusconnect.clubservice.dto.ClubMemberRequestDto;
 import com.campusconnect.clubservice.dto.ClubMemberResponseDto;
 import com.campusconnect.clubservice.service.ClubService;
-import com.campusconnect.clubservice.client.NotificationClient;
+import com.campusconnect.clubservice.kafka.ClubKafkaProducer; // Import Kafka producer
+//import com.campusconnect.clubservice.client.NotificationClient;
 import com.campusconnect.clubservice.dto.EmailSendRequest;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,7 +28,8 @@ import java.util.List;
 public class ClubController {
 
 	private final ClubService clubService;
-	private final NotificationClient notificationClient;
+	private final ClubKafkaProducer clubKafkaProducer; // ADD THIS
+//	private final NotificationClient notificationClient;
 
 	@PostMapping
 	public ResponseEntity<ClubResponseDto> createClub(@Valid @RequestBody ClubRequestDto clubRequestDto) {
@@ -59,34 +61,57 @@ public class ClubController {
 		clubService.deleteClub(id);
 		return ResponseEntity.noContent().build();
 	}
+//	@PostMapping("/{clubId}/members")
+//	public ResponseEntity<ClubMemberResponseDto> addMemberToClub(
+//	        @PathVariable Long clubId,
+//	        @Valid @RequestBody ClubMemberRequestDto memberRequestDto) {
+//
+//	    ClubMemberResponseDto member = clubService.addMemberToClub(clubId, memberRequestDto);
+//
+//	    try {
+//	        ClubResponseDto club = clubService.getClubById(clubId);
+//
+//	        ClubMemberAddedRequest req = ClubMemberAddedRequest.builder()
+//	                .userId(member.getUserId())
+//	                .clubId(clubId)
+//	                .role(member.getRole().name())  // ✅ enum → String
+//	                .requestId("club-member-" + member.getUserId() + "-" + clubId)
+//	                .variables(Map.of(
+//	                        "clubName", club.getName(),
+//	                        "role", member.getRole().name()
+//	                ))
+//	                .build();
+//
+//	        notificationClient.notifyClubMemberAdded(req);
+//	    } catch (Exception e) {
+//	        log.error("❌ Failed to send club member notification", e);
+//	    }
+//
+//	    return new ResponseEntity<>(member, HttpStatus.CREATED);
+//	}
+
 	@PostMapping("/{clubId}/members")
 	public ResponseEntity<ClubMemberResponseDto> addMemberToClub(
-	        @PathVariable Long clubId,
-	        @Valid @RequestBody ClubMemberRequestDto memberRequestDto) {
+			@PathVariable Long clubId,
+			@Valid @RequestBody ClubMemberRequestDto memberRequestDto) {
 
-	    ClubMemberResponseDto member = clubService.addMemberToClub(clubId, memberRequestDto);
+		ClubMemberResponseDto member = clubService.addMemberToClub(clubId, memberRequestDto);
 
-	    try {
-	        ClubResponseDto club = clubService.getClubById(clubId);
+		try {
+			// **MODIFIED PART**: Send notification via Kafka
+			ClubMemberAddedRequest req = ClubMemberAddedRequest.builder()
+					.userId(member.getUserId())
+					.clubId(clubId)
+					.role(member.getRole().name())
+					.build();
 
-	        ClubMemberAddedRequest req = ClubMemberAddedRequest.builder()
-	                .userId(member.getUserId())
-	                .clubId(clubId)
-	                .role(member.getRole().name())  // ✅ enum → String
-	                .requestId("club-member-" + member.getUserId() + "-" + clubId)
-	                .variables(Map.of(
-	                        "clubName", club.getName(),
-	                        "role", member.getRole().name()
-	                ))
-	                .build();
+			clubKafkaProducer.sendClubMemberAddedNotification(req);
 
+		} catch (Exception e) {
+			log.error("❌ Failed to queue club member notification", e);
+		}
 
-	        notificationClient.notifyClubMemberAdded(req);
-	    } catch (Exception e) {
-	        log.error("❌ Failed to send club member notification", e);
-	    }
-
-	    return new ResponseEntity<>(member, HttpStatus.CREATED);
+		return new ResponseEntity<>(member, HttpStatus.CREATED);
 	}
 
 	@GetMapping("/{clubId}/members")

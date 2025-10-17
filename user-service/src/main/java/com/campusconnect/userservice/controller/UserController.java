@@ -1,9 +1,10 @@
 package com.campusconnect.userservice.controller;
 
 import com.campusconnect.userservice.dto.UserRequestDto;
+import com.campusconnect.userservice.kafka.UserKafkaProducer; // Import Kafka producer
 import com.campusconnect.userservice.dto.UserResponseDto;
 import com.campusconnect.userservice.service.UserService;
-import com.campusconnect.userservice.client.NotificationClient;
+//import com.campusconnect.userservice.client.NotificationClient;
 import com.campusconnect.userservice.dto.UserRegisteredRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -24,26 +25,45 @@ import java.util.List;
 public class UserController {
     
     private final UserService userService;
-    private final NotificationClient notificationClient;
+//    private final NotificationClient notificationClient;
+    private final UserKafkaProducer userKafkaProducer;
+
+//    @PostMapping("/register")
+//    public ResponseEntity<UserResponseDto> register(@RequestBody UserRequestDto userRequestDto) {
+//    	UserResponseDto savedUser = userService.createUser(userRequestDto);
+//
+//        log.info("User created with ID: {}", savedUser.getId());
+//
+//        UserRegisteredRequest notificationRequest =
+//                new UserRegisteredRequest();
+//        notificationRequest.setUserId(savedUser.getId());
+//        notificationRequest.setRequestId("user-registered-" + savedUser.getId());
+//
+//
+//        log.info("Calling notification-service for user: {}", savedUser.getId());
+//        notificationClient.notifyUserRegistered(notificationRequest);
+//        log.info("Notification-service call completed for user: {}", savedUser.getId());
+//
+//        return ResponseEntity.ok(savedUser);
+//    }
 
     @PostMapping("/register")
     public ResponseEntity<UserResponseDto> register(@RequestBody UserRequestDto userRequestDto) {
-    	UserResponseDto savedUser = userService.createUser(userRequestDto);
-
+        UserResponseDto savedUser = userService.createUser(userRequestDto);
         log.info("User created with ID: {}", savedUser.getId());
 
-        UserRegisteredRequest notificationRequest =
-                new UserRegisteredRequest();
+        UserRegisteredRequest notificationRequest = new UserRegisteredRequest();
         notificationRequest.setUserId(savedUser.getId());
         notificationRequest.setRequestId("user-registered-" + savedUser.getId());
-        
 
-        log.info("Calling notification-service for user: {}", savedUser.getId());
-        notificationClient.notifyUserRegistered(notificationRequest);
-        log.info("Notification-service call completed for user: {}", savedUser.getId());
+        // **MODIFIED PART**: Send notification via Kafka instead of Feign
+        log.info("Queuing notification for new user: {}", savedUser.getId());
+        userKafkaProducer.sendUserRegisteredNotification(notificationRequest);
+        log.info("Notification message queued for user: {}", savedUser.getId());
 
         return ResponseEntity.ok(savedUser);
     }
+
 
     
 

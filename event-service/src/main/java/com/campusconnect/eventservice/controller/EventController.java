@@ -5,7 +5,8 @@ import com.campusconnect.eventservice.client.CertificateClient;
 import com.campusconnect.eventservice.client.ClubClient;
 import com.campusconnect.eventservice.dto.*;
 import com.campusconnect.eventservice.service.EventService;
-import com.campusconnect.eventservice.client.NotificationClient;
+import com.campusconnect.eventservice.kafka.EventKafkaProducer; // Import Kafka producer
+//import com.campusconnect.eventservice.client.NotificationClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 
@@ -25,35 +26,49 @@ import java.util.List;
 public class EventController {
 
     private final EventService eventService;
-    private final NotificationClient notificationClient;
+    private final EventKafkaProducer eventKafkaProducer; // ADD THIS
+//    private final NotificationClient notificationClient;
     private ClubClient clubClient;
     // Inject the new CertificateClient
     private final CertificateClient certificateClient;
 
+//    @PostMapping("/{clubId}/events")
+//    public ResponseEntity<EventResponseDto> createClubEvent(@PathVariable Long clubId,
+//                                                           @Valid @RequestBody EventRequestDto eventRequestDto) {
+//        EventResponseDto createdEvent = eventService.createClubEvent(clubId, eventRequestDto);
+//
+//        // Send event created notification asynchronously
+//        sendEventCreatedNotificationAsync(createdEvent);
+//
+//        return new ResponseEntity<>(createdEvent, HttpStatus.CREATED);
+//    }
+
     @PostMapping("/{clubId}/events")
     public ResponseEntity<EventResponseDto> createClubEvent(@PathVariable Long clubId,
-                                                           @Valid @RequestBody EventRequestDto eventRequestDto) {
+                                                            @Valid @RequestBody EventRequestDto eventRequestDto) {
         EventResponseDto createdEvent = eventService.createClubEvent(clubId, eventRequestDto);
 
-        // Send event created notification asynchronously
-        sendEventCreatedNotificationAsync(createdEvent);
+        // **MODIFIED PART**: Send notification via Kafka
+        log.info("🔔 Queuing event created notification for eventId={}", createdEvent.getId());
+        eventKafkaProducer.sendEventCreatedNotification(createdEvent);
 
         return new ResponseEntity<>(createdEvent, HttpStatus.CREATED);
     }
 
-    @Async
-    public CompletableFuture<Void> sendEventCreatedNotificationAsync(EventResponseDto event) {
-        try {
-            log.info("🔔 Sending event created notification for eventId={}, clubId={}", event.getId(), event.getClubId());
 
-            notificationClient.notifyEventCreated(event);
-
-            log.info("✅ Event created notification sent for event: {}", event.getId());
-        } catch (Exception e) {
-            log.error("❌ Failed to send event created notification for event: {}", event.getId(), e);
-        }
-        return CompletableFuture.completedFuture(null);
-    }
+//    @Async
+//    public CompletableFuture<Void> sendEventCreatedNotificationAsync(EventResponseDto event) {
+//        try {
+//            log.info("🔔 Sending event created notification for eventId={}, clubId={}", event.getId(), event.getClubId());
+//
+//            notificationClient.notifyEventCreated(event);
+//
+//            log.info("✅ Event created notification sent for event: {}", event.getId());
+//        } catch (Exception e) {
+//            log.error("❌ Failed to send event created notification for event: {}", event.getId(), e);
+//        }
+//        return CompletableFuture.completedFuture(null);
+//    }
 
     @GetMapping("/{clubId}/events")
     public ResponseEntity<List<EventResponseDto>> getClubEvents(@PathVariable Long clubId) {
