@@ -1,6 +1,7 @@
 
 package com.campusconnect.eventservice.controller;
 
+import com.campusconnect.eventservice.client.CertificateClient;
 import com.campusconnect.eventservice.client.ClubClient;
 import com.campusconnect.eventservice.dto.*;
 import com.campusconnect.eventservice.service.EventService;
@@ -26,6 +27,8 @@ public class EventController {
     private final EventService eventService;
     private final NotificationClient notificationClient;
     private ClubClient clubClient;
+    // Inject the new CertificateClient
+    private final CertificateClient certificateClient;
 
     @PostMapping("/{clubId}/events")
     public ResponseEntity<EventResponseDto> createClubEvent(@PathVariable Long clubId,
@@ -101,10 +104,27 @@ public class EventController {
         EventResponseDto event = eventService.getEventById(eventId);
         return ResponseEntity.ok(event);
     }
-    
+
     @PostMapping("/events/{eventId}/complete")
 	public ResponseEntity<Void> completeEventAndSendCertificates(@PathVariable Long eventId) {
 		eventService.completeEventAndSendCertificates(eventId);
 		return ResponseEntity.ok().build();
 	}
+
+
+    /**
+     * NEW ENDPOINT:
+     * Acts as a proxy to the certificate-service for downloading a certificate.
+     */
+    @GetMapping("/{clubId}/events/{eventId}/participants/{userId}/certificate/download")
+    public ResponseEntity<byte[]> downloadParticipantCertificate(
+            @PathVariable Long clubId, // The clubId is part of the path but not used in the call
+            @PathVariable Long eventId,
+            @PathVariable Long userId) {
+
+        log.info("Request received to download certificate for event {} and user {}", eventId, userId);
+
+        // This correctly calls the CertificateClient and returns the response
+        return certificateClient.downloadCertificate(eventId, userId);
+    }
 }

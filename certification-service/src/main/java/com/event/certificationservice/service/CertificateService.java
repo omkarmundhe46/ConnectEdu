@@ -16,11 +16,15 @@ import net.sf.jasperreports.engine.util.JRLoader;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -134,51 +138,155 @@ public class CertificateService {
 //    }
 
 
+//    /**
+//     * Generate, save metadata and send a message to Kafka for notification.
+//     */
+//    public Certificate generateSaveAndSend(Long eventId, Long userId) {
+//        try {
+//            // Generate PDF bytes
+//            byte[] pdf = generateCertificatePdf(eventId, userId);
+//
+//            // Save to disk
+//            Path uploadsDir = Paths.get("uploads", "certificates");
+//            Files.createDirectories(uploadsDir);
+//            String filename = "event_" + eventId + "_user_" + userId + ".pdf";
+//            Path filePath = uploadsDir.resolve(filename);
+//            Files.write(filePath, pdf, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+//
+//            // Save metadata to DB
+//            Certificate certificate = new Certificate();
+//            certificate.setEventId(eventId);
+//            certificate.setUserId(userId);
+//            certificate.setFilePath(filePath.toString());
+//            certificate.setIssuedAt(LocalDateTime.now());
+//            Certificate saved = certificateRepository.save(certificate);
+//
+//            // Fetch user and event details for the notification message
+//            UserResponseDto user = userClient.getUserById(userId);
+//            EventResponseDto event = eventClient.getEventById(eventId);
+//
+//            CertificateNotificationRequest notificationRequest = new CertificateNotificationRequest(
+//                    userId,
+//                    user.getName(),
+//                    user.getEmail(),
+//                    event.getName(),
+//                    event.getDate().toString(),
+//                    pdf
+//            );
+//
+//            // **MODIFIED PART**: Send notification via Kafka instead of Feign
+//            certificateKafkaProducer.sendCertificateNotification(notificationRequest);
+//            log.info("Certificate notification message for user {} has been sent to the Kafka queue.", userId);
+//
+//            return saved;
+//
+//        } catch (Exception e) {
+//            log.error("Error in generateSaveAndSend", e);
+//            throw new RuntimeException(e);
+//        }
+//    }
+//    public void generateCertificateForParticipant(Long eventId, Long userId) {
+//        // Check if a certificate already exists for this user and event
+//        if (certificateRepository.existsByEventIdAndUserId(eventId, userId)) {
+//            log.warn("Certificate for user {} and event {} already exists. Skipping.", userId, eventId);
+//            return; // Do nothing if it's already been issued
+//        }
+//
+//        // If it doesn't exist, call the original method to create and send it
+//        log.info("No existing certificate found. Generating new certificate for user {} and event {}.", userId, eventId);
+//        generateSaveAndSend(eventId, userId);
+//    }
+
+
     /**
-     * Generate, save metadata and send a message to Kafka for notification.
+     * MANUAL FLOW: This is your original method. It now uses a helper to avoid
+     * re-generating the PDF, but its primary function is to send the Kafka notification.
      */
     public Certificate generateSaveAndSend(Long eventId, Long userId) {
-        try {
-            // Generate PDF bytes
-            byte[] pdf = generateCertificatePdf(eventId, userId);
+        // Step 1: Ensure a certificate file exists by finding or creating it.
+        Certificate certificate = findOrCreateCertificate(eventId, userId);
 
-            // Save to disk
+        // Step 2: Read the PDF from disk and send the Kafka message for email notification.
+        try {
+            UserResponseDto user = userClient.getUserById(userId);
+            EventResponseDto event = eventClient.getEventById(eventId);
+            byte[] pdfBytes = Files.readAllBytes(Paths.get(certificate.getFilePath()));
+
+            CertificateNotificationRequest notificationRequest = new CertificateNotificationRequest(
+                    userId, user.getName(), user.getEmail(), event.getName(), event.getDate().toString(), pdfBytes
+            );
+
+            certificateKafkaProducer.sendCertificateNotification(notificationRequest);
+            log.info("Certificate email notification has been queued for user {}.", userId);
+
+            return certificate;
+        } catch (IOException e) {
+            log.error("Failed to read certificate file for notification: {}", e.getMessage());
+            throw new RuntimeException("Failed to read certificate for notification.", e);
+        }
+    }
+
+
+
+
+    /**
+     * NEW METHOD FOR DOWNLOAD FLOW:
+     * Gets the certificate PDF bytes for direct download. It enforces the 7 PM rule.
+     */
+    public byte[] getCertificateForDownload(Long eventId, Long userId) {
+        // Step 1: Check the business rule (is it after 7 PM on the event day?)
+        EventResponseDto event = eventClient.getEventById(eventId);
+        LocalDate eventDate = event.getDate();
+        LocalDateTime activationTime = LocalDateTime.of(eventDate, LocalTime.of(19, 0)); // 7 PM
+
+        if (LocalDateTime.now().isBefore(activationTime)) {
+            throw new IllegalStateException("Certificate is not yet available for download. Please check back after 7 PM on the event date.");
+        }
+
+        // Step 2: Find or create the certificate file
+        Certificate certificate = findOrCreateCertificate(eventId, userId);
+
+        // Step 3: Read the PDF file from disk and return its bytes
+        try {
+            return Files.readAllBytes(Paths.get(certificate.getFilePath()));
+        } catch (IOException e) {
+            log.error("Could not read certificate file from path {}: {}", certificate.getFilePath(), e.getMessage());
+            throw new RuntimeException("Error retrieving certificate file.", e);
+        }
+    }
+
+    /**
+     * NEW PRIVATE HELPER METHOD:
+     * Checks if a certificate exists in the DB. If yes, it returns it.
+     * If not, it generates the PDF, saves it, and returns the new DB record.
+     */
+    private Certificate findOrCreateCertificate(Long eventId, Long userId) {
+        Optional<Certificate> existingCert = certificateRepository.findByEventIdAndUserId(eventId, userId);
+        if (existingCert.isPresent()) {
+            log.info("Found existing certificate for user {} and event {}.", userId, eventId);
+            return existingCert.get();
+        }
+
+        log.info("No existing certificate found. Generating new one for user {} and event {}.", userId, eventId);
+        try {
+            byte[] pdf = generateCertificatePdf(eventId, userId);
             Path uploadsDir = Paths.get("uploads", "certificates");
             Files.createDirectories(uploadsDir);
             String filename = "event_" + eventId + "_user_" + userId + ".pdf";
             Path filePath = uploadsDir.resolve(filename);
             Files.write(filePath, pdf, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-            // Save metadata to DB
-            Certificate certificate = new Certificate();
-            certificate.setEventId(eventId);
-            certificate.setUserId(userId);
-            certificate.setFilePath(filePath.toString());
-            certificate.setIssuedAt(LocalDateTime.now());
-            Certificate saved = certificateRepository.save(certificate);
+            Certificate newCertificate = new Certificate();
+            newCertificate.setEventId(eventId);
+            newCertificate.setUserId(userId);
+            newCertificate.setFilePath(filePath.toString());
+            newCertificate.setIssuedAt(LocalDateTime.now());
 
-            // Fetch user and event details for the notification message
-            UserResponseDto user = userClient.getUserById(userId);
-            EventResponseDto event = eventClient.getEventById(eventId);
-
-            CertificateNotificationRequest notificationRequest = new CertificateNotificationRequest(
-                    userId,
-                    user.getName(),
-                    user.getEmail(),
-                    event.getName(),
-                    event.getDate().toString(),
-                    pdf
-            );
-
-            // **MODIFIED PART**: Send notification via Kafka instead of Feign
-            certificateKafkaProducer.sendCertificateNotification(notificationRequest);
-            log.info("Certificate notification message for user {} has been sent to the Kafka queue.", userId);
-
-            return saved;
+            return certificateRepository.save(newCertificate);
 
         } catch (Exception e) {
-            log.error("Error in generateSaveAndSend", e);
-            throw new RuntimeException(e);
+            log.error("Error in findOrCreateCertificate for user {} and event {}: {}", userId, eventId, e.getMessage());
+            throw new RuntimeException("Failed to generate and save certificate.", e);
         }
     }
 }
