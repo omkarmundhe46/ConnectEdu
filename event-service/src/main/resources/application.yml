@@ -24,6 +24,15 @@ spring:
       properties:
         # This sends plain JSON without Java type headers to prevent errors
         spring.json.add.type.headers: false
+
+
+
+application:
+  security:
+    jwt:
+      # PASTE THE EXACT SAME SECRET KEY FROM YOUR OTHER SERVICES
+      secret-key: NjdFNkEzRDA3RTY4NkM1OUQxN0E5RkU4NzQ2Njg5QzI3MjgzNTZFRDE3RTFCOTE1RkY1NEZDRTE1NTYyN0IzNA==
+
 server:
   port: 8083
 

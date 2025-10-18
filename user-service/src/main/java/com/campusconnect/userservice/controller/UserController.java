@@ -1,5 +1,6 @@
 package com.campusconnect.userservice.controller;
 
+import com.campusconnect.userservice.dto.UpdateUserRoleRequest;
 import com.campusconnect.userservice.dto.UserRequestDto;
 import com.campusconnect.userservice.kafka.UserKafkaProducer; // Import Kafka producer
 import com.campusconnect.userservice.dto.UserResponseDto;
@@ -14,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -65,6 +67,12 @@ public class UserController {
 //    }
 
 
+    @PutMapping("/{id}/role")
+    @PreAuthorize("hasAnyAuthority('ROLE_COLLEGE_ADMIN', 'ROLE_CLUB_ADMIN')")
+    public ResponseEntity<Void> updateUserRole(@PathVariable Long id, @Valid @RequestBody UpdateUserRoleRequest request) {
+        userService.updateUserRole(id, request);
+        return ResponseEntity.ok().build();
+    }
     
 
     @GetMapping

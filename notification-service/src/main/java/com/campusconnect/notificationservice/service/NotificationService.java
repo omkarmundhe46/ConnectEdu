@@ -52,20 +52,23 @@ public class NotificationService {
 		}
 
 		try {
-			UserDto user = userClient.getUser(request.getUserId());
+			// --- THIS IS THE FIX ---
+			// We no longer call userClient.getUser(). We use the data from the request directly.
+			// UserDto user = userClient.getUser(request.getUserId()); // REMOVE THIS LINE
 
 			Map<String, Object> variables = new HashMap<>();
-			variables.put("name", user.getName());
-			variables.put("email", user.getEmail());
+			variables.put("name", request.getName());   // Use name from the request
+			variables.put("email", request.getEmail()); // Use email from the request
 
-			sendNotificationAsync("WELCOME_USER", user.getEmail(), variables, user.getId());
+			sendNotificationAsync("WELCOME_USER", request.getEmail(), variables, request.getUserId());
+
 
 			if (request.getRequestId() != null) {
 				NotificationRequest notificationRequest = new NotificationRequest();
 				notificationRequest.setRequestId(request.getRequestId());
 				notificationRequest.setNotificationType("USER_REGISTERED");
 				notificationRequest.setProcessedCount(1);
-				notificationRequest.setUserId(user.getId());
+				notificationRequest.setUserId(request.getUserId());
 				notificationRequest.setCreatedAt(LocalDateTime.now());
 				requestRepository.save(notificationRequest);
 			}
@@ -76,8 +79,9 @@ public class NotificationService {
 			return response;
 
 		} catch (FeignException.NotFound e) {
-			throw new UserNotFoundException("User not found with id: " + request.getUserId());
-		}
+            // The FeignException will no longer happen, but we can keep a generic catch block.
+			log.error("Failed to process user registration notification for user {}: {}", request.getUserId(), e.getMessage());
+			throw new RuntimeException("Failed to process notification", e);		}
 	}
 
 	public NotificationResponse notifyEventCreated(EventResponseDto eventDto) {
@@ -212,21 +216,24 @@ public class NotificationService {
 		}
 
 		try {
-			// Fetch user
-			UserDto user = userClient.getUser(request.getUserId());
+			// --- THIS IS THE FIX ---
+			// We no longer call userClient.getUser(). We use details from the request.
+			// UserDto user = userClient.getUser(request.getUserId()); // REMOVE THIS
 
-			// Fetch club
-			ClubResponseDto club = clubClient.getClubById(request.getClubId());
+			// We still need the club name, so this Feign call is necessary.
+//			ClubResponseDto club = clubClient.getClubById(request.getClubId());
 
-			String subject = "🎉 Welcome to " + club.getName();
-			String body = "<h2>Hello " + user.getName() + ",</h2>" + "<p>Congratulations! You are now a member of <b>"
-					+ club.getName() + "</b>.</p>" + "<p>Your role: <b>" + request.getRole() + "</b></p>"
+			// Use the clubName directly from the enriched request object.
+			String subject = "🎉 Welcome to " + request.getClubName();
+			String body = "<h2>Hello " + request.getUserName() + ",</h2>"
+					+ "<p>Congratulations! You are now a member of <b>" + request.getClubName() + "</b>.</p>"
+					+ "<p>Your role: <b>" + request.getRole() + "</b></p>"
 					+ "<p>We’re excited to have you onboard 🚀</p>";
 
-			// Save log
 			NotificationLog logEntry = new NotificationLog();
-			logEntry.setUserId(user.getId());
-			logEntry.setToEmail(user.getEmail());
+			logEntry.setUserId(request.getUserId());
+			// Use the userEmail from the request object
+			logEntry.setToEmail(request.getUserEmail());
 			logEntry.setSubject(subject);
 			logEntry.setBody(body);
 			NotificationLog savedLog = logRepository.save(logEntry);
@@ -238,18 +245,19 @@ public class NotificationService {
 			NotificationRequest notificationRequest = new NotificationRequest();
 			notificationRequest.setRequestId(requestId);
 			notificationRequest.setNotificationType("CLUB_MEMBER_ADDED");
-			notificationRequest.setUserId(user.getId());
+			notificationRequest.setUserId(request.getUserId());
 			notificationRequest.setProcessedCount(1);
 			notificationRequest.setCreatedAt(LocalDateTime.now());
 			requestRepository.save(notificationRequest);
 
 			NotificationResponse response = new NotificationResponse();
-			response.setDetails("club member notification enqueued");
+			response.setDetails("club member notification enqueued from kafka message");
 			response.setEnqueueCount(1);
 			return response;
 
-		} catch (FeignException.NotFound e) {
-			throw new RuntimeException("User or Club not found");
+		} catch (Exception e) {
+			log.error("Failed to process club member notification for user {}: {}", request.getUserId(), e.getMessage());
+			throw new RuntimeException("Failed to process notification", e);
 		}
 	}
 	

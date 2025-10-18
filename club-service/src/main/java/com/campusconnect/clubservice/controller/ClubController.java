@@ -1,14 +1,10 @@
 package com.campusconnect.clubservice.controller;
 
-import com.campusconnect.clubservice.dto.ClubRequestDto;
-import com.campusconnect.clubservice.dto.ClubResponseDto;
-import com.campusconnect.clubservice.dto.ClubMemberAddedRequest;
-import com.campusconnect.clubservice.dto.ClubMemberRequestDto;
-import com.campusconnect.clubservice.dto.ClubMemberResponseDto;
+import com.campusconnect.clubservice.client.UserClient;
+import com.campusconnect.clubservice.dto.*;
 import com.campusconnect.clubservice.service.ClubService;
 import com.campusconnect.clubservice.kafka.ClubKafkaProducer; // Import Kafka producer
 //import com.campusconnect.clubservice.client.NotificationClient;
-import com.campusconnect.clubservice.dto.EmailSendRequest;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,6 +31,7 @@ public class ClubController {
 	private final ClubService clubService;
 	private final ClubKafkaProducer clubKafkaProducer; // ADD THIS
 //	private final NotificationClient notificationClient;
+	private final UserClient userClient; // Inject the UserClient
 
 	@PostMapping
 	@PreAuthorize("hasAuthority('ROLE_COLLEGE_ADMIN')") // Only College Admin can create
@@ -104,19 +101,30 @@ public class ClubController {
 //	}
 
 	@PostMapping("/{clubId}/members")
-	@PreAuthorize("hasAuthority('ROLE_CLUB_ADMIN')") // Only Club Admin can add members
+	@PreAuthorize("hasAuthority('ROLE_CLUB_ADMIN')")
 	public ResponseEntity<ClubMemberResponseDto> addMemberToClub(
 			@PathVariable Long clubId,
 			@Valid @RequestBody ClubMemberRequestDto memberRequestDto) {
-		validateClubOwnership(clubId); // Check if they are the admin of THIS club
+
+		validateClubOwnership(clubId);
 		ClubMemberResponseDto member = clubService.addMemberToClub(clubId, memberRequestDto);
 
 		try {
-			// **MODIFIED PART**: Send notification via Kafka
+			// --- THIS IS THE FIX ---
+			// 1. Fetch the user's details using the authenticated Feign client.
+			UserDto user = userClient.getUserById(member.getUserId());
+
+			// 2. Fetch the club's details.
+			ClubResponseDto club = clubService.getClubById(clubId);
+
+			// 3. Build the enriched Kafka message with all necessary details.
 			ClubMemberAddedRequest req = ClubMemberAddedRequest.builder()
 					.userId(member.getUserId())
 					.clubId(clubId)
 					.role(member.getRole().name())
+					.userName(user.getName())   // Add the name
+					.userEmail(user.getEmail()) // Add the email
+					.clubName(club.getName()) // Add the club name
 					.build();
 
 			clubKafkaProducer.sendClubMemberAddedNotification(req);
@@ -129,10 +137,22 @@ public class ClubController {
 	}
 
 	// --- HELPER METHODS FOR SECURITY CHECKS ---
+	// ... inside your ClubController class
+
 	private void validateClubOwnership(Long clubId) {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		Jwt jwt = (Jwt) authentication.getPrincipal();
-		Long managedClubId = jwt.getClaim("managedClubId");
+
+		// --- THE DEFINITIVE FIX ---
+		// 1. Get the claim as a generic Object.
+		Object managedClubIdObj = jwt.getClaim("managedClubId");
+
+		// 2. Check if it's a Number and safely convert it to a Long.
+		// This handles the Integer-to-Long conversion problem robustly.
+		Long managedClubId = null;
+		if (managedClubIdObj instanceof Number) {
+			managedClubId = ((Number) managedClubIdObj).longValue();
+		}
 
 		if (managedClubId == null || !managedClubId.equals(clubId)) {
 			throw new AccessDeniedException("You are not the admin of this club.");

@@ -1,4 +1,4 @@
-package com.campusconnect.clubservice.config;
+package com.campusconnect.eventservice.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -23,7 +23,6 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/internal/**").permitAll() // Allow internal calls
                         .anyRequest().authenticated() // Secure ALL endpoints by default
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

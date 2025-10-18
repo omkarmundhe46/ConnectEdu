@@ -1,5 +1,6 @@
 package com.campusconnect.userservice.service;
 
+import com.campusconnect.userservice.dto.UpdateUserRoleRequest;
 import com.campusconnect.userservice.dto.UserRequestDto;
 import com.campusconnect.userservice.dto.UserResponseDto;
 import com.campusconnect.userservice.entity.Role; // ADDED
@@ -8,6 +9,7 @@ import com.campusconnect.userservice.exception.EmailAlreadyExistsException;
 import com.campusconnect.userservice.exception.UserNotFoundException;
 import com.campusconnect.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder; // ADDED
  import org.springframework.stereotype.Service;
 
@@ -20,6 +22,7 @@ public class UserService {
     
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder; // ADDED
+    Logger log = org.slf4j.LoggerFactory.getLogger(UserService.class);
 
 //    public UserResponseDto createUser(UserRequestDto userRequestDto) {
 //        if (userRepository.existsByEmail(userRequestDto.getEmail())) {
@@ -117,5 +120,27 @@ public class UserService {
         dto.setCreatedAt(user.getCreatedAt());
         dto.setUpdatedAt(user.getUpdatedAt());
         return dto;
+    }
+
+    public void updateUserRole(Long userId, UpdateUserRoleRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+
+        // Logic to prevent demoting a higher-level admin
+        if (user.getRole() == Role.COLLEGE_ADMIN || user.getRole() == Role.CLUB_ADMIN && request.getNewRole() == Role.CLUB_MEMBER) {
+            log.warn("Attempt to demote user {} from {} to {}. Action skipped.", userId, user.getRole(), request.getNewRole());
+            return;
+        }
+
+        user.setRole(request.getNewRole());
+        if (request.getNewRole() == Role.CLUB_ADMIN) {
+            user.setManagedClubId(request.getManagedClubId());
+        } else {
+            // If they are being changed to something else, clear the managed club id
+            user.setManagedClubId(null);
+        }
+
+        userRepository.save(user);
+        log.info("Successfully updated role for user {} to {}", userId, request.getNewRole());
     }
 }

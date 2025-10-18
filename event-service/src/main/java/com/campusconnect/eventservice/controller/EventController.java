@@ -15,7 +15,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.List;
 
@@ -28,7 +33,7 @@ public class EventController {
     private final EventService eventService;
     private final EventKafkaProducer eventKafkaProducer; // ADD THIS
 //    private final NotificationClient notificationClient;
-    private ClubClient clubClient;
+//    private ClubClient clubClient;
     // Inject the new CertificateClient
     private final CertificateClient certificateClient;
 
@@ -44,14 +49,13 @@ public class EventController {
 //    }
 
     @PostMapping("/{clubId}/events")
+    @PreAuthorize("hasAuthority('ROLE_CLUB_ADMIN')") // Only Club Admin can create events
     public ResponseEntity<EventResponseDto> createClubEvent(@PathVariable Long clubId,
                                                             @Valid @RequestBody EventRequestDto eventRequestDto) {
+        validateClubOwnership(clubId); // Fine-grained check: Is this YOUR club?
         EventResponseDto createdEvent = eventService.createClubEvent(clubId, eventRequestDto);
-
-        // **MODIFIED PART**: Send notification via Kafka
         log.info("🔔 Queuing event created notification for eventId={}", createdEvent.getId());
         eventKafkaProducer.sendEventCreatedNotification(createdEvent);
-
         return new ResponseEntity<>(createdEvent, HttpStatus.CREATED);
     }
 
@@ -71,41 +75,83 @@ public class EventController {
 //    }
 
     @GetMapping("/{clubId}/events")
+    @PreAuthorize("isAuthenticated()") // Any logged-in user can see events
     public ResponseEntity<List<EventResponseDto>> getClubEvents(@PathVariable Long clubId) {
         List<EventResponseDto> events = eventService.getClubEvents(clubId);
         return ResponseEntity.ok(events);
     }
 
-    @GetMapping("/{clubId}/events/{eventId}")
-    public ResponseEntity<EventResponseDto> getClubEventById(@PathVariable Long clubId, @PathVariable Long eventId) {
-        EventResponseDto event = eventService.getClubEventById(clubId, eventId);
-        return ResponseEntity.ok(event);
-    }
+
 
     @PutMapping("/{clubId}/events/{eventId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_COLLEGE_ADMIN')")
     public ResponseEntity<EventResponseDto> updateClubEvent(@PathVariable Long clubId, @PathVariable Long eventId,
-                                                           @Valid @RequestBody EventRequestDto eventRequestDto) {
+                                                            @Valid @RequestBody EventRequestDto eventRequestDto) {
+        if (isClubAdmin()) {
+            validateClubOwnership(clubId);
+        }
         EventResponseDto updatedEvent = eventService.updateClubEvent(clubId, eventId, eventRequestDto);
         return ResponseEntity.ok(updatedEvent);
     }
 
     @DeleteMapping("/{clubId}/events/{eventId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_COLLEGE_ADMIN')")
     public ResponseEntity<Void> deleteClubEvent(@PathVariable Long clubId, @PathVariable Long eventId) {
+        if (isClubAdmin()) {
+            validateClubOwnership(clubId);
+        }
         eventService.deleteClubEvent(clubId, eventId);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{clubId}/events/{eventId}/participants")
+    @PreAuthorize("isAuthenticated()") // Any logged-in user can attempt to participate
     public ResponseEntity<ParticipantResponseDto> addParticipantToEvent(@PathVariable Long clubId, @PathVariable Long eventId,
-                                                                       @Valid @RequestBody EventParticipationDTO participantRequestDto) {
+                                                                        @Valid @RequestBody EventParticipationDTO participantRequestDto) {
+        // Business logic for who can participate should be inside the service layer
         ParticipantResponseDto participant = eventService.addParticipantToEvent(clubId, eventId, participantRequestDto);
         return new ResponseEntity<>(participant, HttpStatus.CREATED);
     }
 
     @GetMapping("/{clubId}/events/{eventId}/participants")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_COLLEGE_ADMIN')")
     public ResponseEntity<List<ParticipantResponseDto>> getEventParticipants(@PathVariable Long clubId, @PathVariable Long eventId) {
+        if (isClubAdmin()) {
+            validateClubOwnership(clubId);
+        }
         List<ParticipantResponseDto> participants = eventService.getEventParticipants(clubId, eventId);
         return ResponseEntity.ok(participants);
+    }
+
+
+    @GetMapping("/{clubId}/events/{eventId}/participants/{userId}/certificate/download")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<byte[]> downloadParticipantCertificate(
+            @PathVariable Long clubId,
+            @PathVariable Long eventId,
+            @PathVariable Long userId) {
+
+        // Fine-grained check: You can only download your own certificate
+        Long authenticatedUserId = getAuthenticatedUserId();
+        if (!authenticatedUserId.equals(userId)) {
+            throw new AccessDeniedException("You are not authorized to download this certificate.");
+        }
+
+        log.info("Request received to download certificate for event {} and user {}", eventId, userId);
+        return certificateClient.downloadCertificate(eventId, userId);
+    }
+
+
+
+
+
+
+
+    //Not required Many more and semi public endpoints //
+    @GetMapping("/{clubId}/events/{eventId}")
+    public ResponseEntity<EventResponseDto> getClubEventById(@PathVariable Long clubId, @PathVariable Long eventId) {
+        EventResponseDto event = eventService.getClubEventById(clubId, eventId);
+        return ResponseEntity.ok(event);
     }
 
     @DeleteMapping("/{clubId}/events/{eventId}/participants/{userId}")
@@ -127,19 +173,34 @@ public class EventController {
 	}
 
 
-    /**
-     * NEW ENDPOINT:
-     * Acts as a proxy to the certificate-service for downloading a certificate.
-     */
-    @GetMapping("/{clubId}/events/{eventId}/participants/{userId}/certificate/download")
-    public ResponseEntity<byte[]> downloadParticipantCertificate(
-            @PathVariable Long clubId, // The clubId is part of the path but not used in the call
-            @PathVariable Long eventId,
-            @PathVariable Long userId) {
+    // --- HELPER METHODS FOR SECURITY CHECKS ---
+    private Long getAuthenticatedUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        return jwt.getClaim("userId"); // Assuming your JWT from user-service has a 'userId' claim
+    }
 
-        log.info("Request received to download certificate for event {} and user {}", eventId, userId);
+    // ... inside your EventController class
 
-        // This correctly calls the CertificateClient and returns the response
-        return certificateClient.downloadCertificate(eventId, userId);
+    private void validateClubOwnership(Long clubId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+
+        // APPLY THE SAME FIX HERE
+        Object managedClubIdObj = jwt.getClaim("managedClubId");
+        Long managedClubId = null;
+        if (managedClubIdObj instanceof Number) {
+            managedClubId = ((Number) managedClubIdObj).longValue();
+        }
+
+        if (managedClubId == null || !managedClubId.equals(clubId)) {
+            throw new AccessDeniedException("You are not the admin of this club.");
+        }
+    }
+
+    private boolean isClubAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_CLUB_ADMIN"));
     }
 }

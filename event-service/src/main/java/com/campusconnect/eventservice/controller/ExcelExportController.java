@@ -13,6 +13,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
@@ -26,8 +31,14 @@ public class ExcelExportController {
     private final UserClient userClient; // 👈 fetch user details here
 
     @GetMapping("/excel")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_COLLEGE_ADMIN')")
     public ResponseEntity<byte[]> downloadParticipantsExcel(@PathVariable Long clubId,
                                                             @PathVariable Long eventId) throws Exception {
+
+        if (isClubAdmin()) {
+            validateClubOwnership(clubId);
+        }
+
         List<ParticipantResponseDto> participants =
                 participantService.getParticipantsByClubAndEvent(clubId, eventId);
 
@@ -69,5 +80,33 @@ public class ExcelExportController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=participants.xlsx")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(out.toByteArray());
+    }
+
+
+
+    // ... inside your ExcelExportController class
+
+    // ... inside your ExcelExportController class
+
+    private void validateClubOwnership(Long clubId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+
+        // AND APPLY THE SAME FIX HERE
+        Object managedClubIdObj = jwt.getClaim("managedClubId");
+        Long managedClubId = null;
+        if (managedClubIdObj instanceof Number) {
+            managedClubId = ((Number) managedClubIdObj).longValue();
+        }
+
+        if (managedClubId == null || !managedClubId.equals(clubId)) {
+            throw new AccessDeniedException("You are not the admin of this club.");
+        }
+    }
+
+    private boolean isClubAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_CLUB_ADMIN"));
     }
 }

@@ -17,7 +17,9 @@ import com.campusconnect.clubservice.client.UserClient;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
+// ... other imports
+import com.campusconnect.clubservice.dto.UpdateUserRoleRequest;
+import com.campusconnect.clubservice.entity.Role; // Assuming you have a Role enum here too
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,6 +45,15 @@ public class ClubService {
         club.setAdminId(clubRequestDto.getAdminId());
 
         Club savedClub = clubRepository.save(club);
+
+        // --- AUTOMATIC ROLE PROMOTION ---
+        // After creating the club, tell the user-service to promote the assigned admin.
+        UpdateUserRoleRequest roleRequest = new UpdateUserRoleRequest(
+                Role.CLUB_ADMIN,
+                savedClub.getId() // Pass the new club's ID
+        );
+        userClient.updateUserRole(savedClub.getAdminId(), roleRequest);
+
         return mapToResponseDto(savedClub);
     }
 
@@ -103,6 +114,12 @@ public class ClubService {
         member.setRole(memberRequestDto.getRole());
         
         ClubMember savedMember = clubMemberRepository.save(member);
+
+        // --- AUTOMATIC ROLE PROMOTION ---
+        // After adding the member, tell the user-service to promote them.
+        UpdateUserRoleRequest roleRequest = new UpdateUserRoleRequest(Role.CLUB_MEMBER, null);
+        userClient.updateUserRole(savedMember.getUserId(), roleRequest);
+
         return mapToMemberResponseDto(savedMember);
     }
 

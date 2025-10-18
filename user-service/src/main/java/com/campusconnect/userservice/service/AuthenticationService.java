@@ -41,10 +41,15 @@ public class AuthenticationService {
                 .build();
         User savedUser = userRepository.save(user);
 
-        // Send Kafka notification
+        // --- THIS IS THE FIX ---
+        // Create the notification request AND populate all the necessary fields.
         UserRegisteredRequest notificationRequest = new UserRegisteredRequest();
         notificationRequest.setUserId(savedUser.getId());
+        notificationRequest.setName(savedUser.getName());   // Add the name
+        notificationRequest.setEmail(savedUser.getEmail()); // Add the email
         notificationRequest.setRequestId("user-registered-" + savedUser.getId());
+
+        // Send the complete DTO to Kafka
         userKafkaProducer.sendUserRegisteredNotification(notificationRequest);
 
         // Return a response DTO (create one if you don't have it)
