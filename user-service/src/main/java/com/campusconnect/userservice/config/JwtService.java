@@ -1,19 +1,23 @@
 package com.campusconnect.userservice.config;
 
+import com.campusconnect.userservice.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class JwtService {
@@ -33,7 +37,25 @@ public class JwtService {
     }
 
     public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
+        // --- THIS IS THE FIX ---
+        // We create a map of extra claims to include in the token.
+        Map<String, Object> extraClaims = new HashMap<>();
+
+        // 1. Add the user's roles to the "roles" claim.
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+        extraClaims.put("roles", roles);
+
+        // 2. If the user is a CLUB_ADMIN, add their managedClubId.
+        if (userDetails instanceof User) {
+            User user = (User) userDetails;
+            if (user.getManagedClubId() != null) {
+                extraClaims.put("managedClubId", user.getManagedClubId());
+            }
+        }
+
+        return generateToken(extraClaims, userDetails);
     }
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {

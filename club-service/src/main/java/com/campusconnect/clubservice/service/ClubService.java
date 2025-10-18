@@ -37,7 +37,11 @@ public class ClubService {
         Club club = new Club();
         club.setName(clubRequestDto.getName());
         club.setDescription(clubRequestDto.getDescription());
-        
+
+        // --- THIS IS THE FIX ---
+        // We must set the adminId from the request DTO onto the entity before saving.
+        club.setAdminId(clubRequestDto.getAdminId());
+
         Club savedClub = clubRepository.save(club);
         return mapToResponseDto(savedClub);
     }
@@ -129,11 +133,13 @@ public class ClubService {
         return member.getRole().name();
     }
 
+    // Update the mapping method to include adminId
     private ClubResponseDto mapToResponseDto(Club club) {
         ClubResponseDto dto = new ClubResponseDto();
         dto.setId(club.getId());
         dto.setName(club.getName());
         dto.setDescription(club.getDescription());
+        dto.setAdminId(club.getAdminId()); // Map the adminId
         dto.setCreatedAt(club.getCreatedAt());
         dto.setUpdatedAt(club.getUpdatedAt());
         return dto;
