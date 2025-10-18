@@ -2,12 +2,14 @@ package com.campusconnect.userservice.service;
 
 import com.campusconnect.userservice.dto.UserRequestDto;
 import com.campusconnect.userservice.dto.UserResponseDto;
-import com.campusconnect.userservice.entity.User;
+import com.campusconnect.userservice.entity.Role; // ADDED
+ import com.campusconnect.userservice.entity.User;
 import com.campusconnect.userservice.exception.EmailAlreadyExistsException;
 import com.campusconnect.userservice.exception.UserNotFoundException;
 import com.campusconnect.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder; // ADDED
+ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,18 +19,39 @@ import java.util.stream.Collectors;
 public class UserService {
     
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder; // ADDED
 
+//    public UserResponseDto createUser(UserRequestDto userRequestDto) {
+//        if (userRepository.existsByEmail(userRequestDto.getEmail())) {
+//            throw new EmailAlreadyExistsException("Email already exists: " + userRequestDto.getEmail());
+//        }
+//
+//        User user = new User();
+//        user.setName(userRequestDto.getName());
+//        user.setEmail(userRequestDto.getEmail());
+//        user.setPassword(userRequestDto.getPassword());
+//        user.setDepartment(userRequestDto.getDepartment());
+//
+//        User savedUser = userRepository.save(user);
+//        return mapToResponseDto(savedUser);
+//    }
+
+
+    // This method is now handled by AuthenticationService, but we keep the core logic
+    // for other parts of the app. It's important to encode the password here as well.
     public UserResponseDto createUser(UserRequestDto userRequestDto) {
         if (userRepository.existsByEmail(userRequestDto.getEmail())) {
             throw new EmailAlreadyExistsException("Email already exists: " + userRequestDto.getEmail());
         }
-        
-        User user = new User();
-        user.setName(userRequestDto.getName());
-        user.setEmail(userRequestDto.getEmail());
-        user.setPassword(userRequestDto.getPassword());
-        user.setDepartment(userRequestDto.getDepartment());
-        
+
+        User user = User.builder()
+                .name(userRequestDto.getName())
+                .email(userRequestDto.getEmail())
+                .password(passwordEncoder.encode(userRequestDto.getPassword())) // ENCODE PASSWORD
+                .department(userRequestDto.getDepartment())
+                .role(Role.USER) // Set default role
+                .build();
+
         User savedUser = userRepository.save(user);
         return mapToResponseDto(savedUser);
     }
@@ -82,12 +105,15 @@ public class UserService {
         return user.getName();
     }
 
+    // Update the DTO mapping to include the new role
     private UserResponseDto mapToResponseDto(User user) {
         UserResponseDto dto = new UserResponseDto();
         dto.setId(user.getId());
         dto.setName(user.getName());
         dto.setEmail(user.getEmail());
         dto.setDepartment(user.getDepartment());
+        dto.setRole(user.getRole()); // ADD ROLE
+        dto.setManagedClubId(user.getManagedClubId()); // ADD MANAGED CLUB ID
         dto.setCreatedAt(user.getCreatedAt());
         dto.setUpdatedAt(user.getUpdatedAt());
         return dto;

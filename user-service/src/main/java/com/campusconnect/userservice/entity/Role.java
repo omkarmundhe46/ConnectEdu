@@ -1,8 +1,8 @@
 package com.campusconnect.userservice.entity;
 
 public enum Role {
-	ADMIN,
+	USER,
+	CLUB_MEMBER,
 	CLUB_ADMIN,
-	MEMBER,
-	STUDENT
+	COLLEGE_ADMIN
 }

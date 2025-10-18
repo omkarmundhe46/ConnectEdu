@@ -26,6 +26,14 @@ spring:
         # This is crucial: it sends plain JSON without Java class headers.
         spring.json.add.type.headers: false
 
+application:
+  security:
+    jwt:
+      # Generate a strong, Base64-encoded secret key and paste it here
+      secret-key: NjdFNkEzRDA3RTY4NkM1OUQxN0E5RkU4NzQ2Njg5QzI3MjgzNTZFRDE3RTFCOTE1RkY1NEZDRTE1NTYyN0IzNA==
+      # Expiration time in milliseconds (e.g., 24 hours)
+      expiration: 86400000
+
 #  security:
 #    oauth2:
 #      client:

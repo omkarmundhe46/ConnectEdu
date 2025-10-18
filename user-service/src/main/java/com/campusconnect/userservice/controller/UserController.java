@@ -47,22 +47,22 @@ public class UserController {
 //        return ResponseEntity.ok(savedUser);
 //    }
 
-    @PostMapping("/register")
-    public ResponseEntity<UserResponseDto> register(@RequestBody UserRequestDto userRequestDto) {
-        UserResponseDto savedUser = userService.createUser(userRequestDto);
-        log.info("User created with ID: {}", savedUser.getId());
-
-        UserRegisteredRequest notificationRequest = new UserRegisteredRequest();
-        notificationRequest.setUserId(savedUser.getId());
-        notificationRequest.setRequestId("user-registered-" + savedUser.getId());
-
-        // **MODIFIED PART**: Send notification via Kafka instead of Feign
-        log.info("Queuing notification for new user: {}", savedUser.getId());
-        userKafkaProducer.sendUserRegisteredNotification(notificationRequest);
-        log.info("Notification message queued for user: {}", savedUser.getId());
-
-        return ResponseEntity.ok(savedUser);
-    }
+//    @PostMapping("/register")
+//    public ResponseEntity<UserResponseDto> register(@RequestBody UserRequestDto userRequestDto) {
+//        UserResponseDto savedUser = userService.createUser(userRequestDto);
+//        log.info("User created with ID: {}", savedUser.getId());
+//
+//        UserRegisteredRequest notificationRequest = new UserRegisteredRequest();
+//        notificationRequest.setUserId(savedUser.getId());
+//        notificationRequest.setRequestId("user-registered-" + savedUser.getId());
+//
+//        // **MODIFIED PART**: Send notification via Kafka instead of Feign
+//        log.info("Queuing notification for new user: {}", savedUser.getId());
+//        userKafkaProducer.sendUserRegisteredNotification(notificationRequest);
+//        log.info("Notification message queued for user: {}", savedUser.getId());
+//
+//        return ResponseEntity.ok(savedUser);
+//    }
 
 
     
