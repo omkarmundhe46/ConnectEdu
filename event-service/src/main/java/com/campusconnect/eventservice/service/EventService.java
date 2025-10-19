@@ -1,5 +1,6 @@
 package com.campusconnect.eventservice.service;
 
+import com.campusconnect.eventservice.client.PaymentClient;
 import com.campusconnect.eventservice.dto.*;
 import com.campusconnect.eventservice.entity.Event;
 import com.campusconnect.eventservice.entity.EventParticipant;
@@ -35,6 +36,7 @@ public class EventService {
     private final ClubClient clubClient;
     private final EventKafkaProducer eventKafkaProducer;
     private final UserClient userClient;
+    private final PaymentClient paymentClient; // Inject the new client
     private final CertificateClient certificateClient;
 
     public EventResponseDto createClubEvent(Long clubId, EventRequestDto eventRequestDto) {
@@ -91,60 +93,81 @@ public class EventService {
         eventRepository.delete(event);
     }
 
-    public ParticipantResponseDto addParticipantToEvent(Long clubId, Long eventId, EventParticipationDTO participantRequestDto) {
-        // Step 1: Get the authenticated user's details from the JWT
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Jwt jwt = (Jwt) authentication.getPrincipal();
-        // --- THIS IS THE FIX ---
-        // Safely get the userId claim and convert it from Integer to Long.
-        Object userIdObj = jwt.getClaim("userId");
-        Long authenticatedUserId = null;
-        if (userIdObj instanceof Number) {
-            authenticatedUserId = ((Number) userIdObj).longValue();
-        }
-        // --- END OF FIX ---
+//    public ParticipantResponseDto addParticipantToEvent(Long clubId, Long eventId, EventParticipationDTO participantRequestDto) {
+//        // Step 1: Get the authenticated user's details from the JWT
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        Jwt jwt = (Jwt) authentication.getPrincipal();
+//        // --- THIS IS THE FIX ---
+//        // Safely get the userId claim and convert it from Integer to Long.
+//        Object userIdObj = jwt.getClaim("userId");
+//        Long authenticatedUserId = null;
+//        if (userIdObj instanceof Number) {
+//            authenticatedUserId = ((Number) userIdObj).longValue();
+//        }
+//        // --- END OF FIX ---
+//
+//        String userRole = jwt.getClaimAsStringList("roles").get(0);
+//
+//        // This check will now work correctly without a NullPointerException
+//        if (authenticatedUserId == null || !authenticatedUserId.equals(participantRequestDto.getUserId())) {
+//            throw new AccessDeniedException("You can only register yourself for an event.");
+//        }
+//
+//        // Step 2: Check the business rule for Club Members
+//        if ("ROLE_CLUB_MEMBER".equals(userRole)) {
+//            log.info("User is a CLUB_MEMBER. Checking if they belong to this club...");
+//            // Make an authenticated call to club-service
+//            boolean isMemberOfThisClub = clubClient.isMember(clubId, authenticatedUserId);
+//
+//            if (isMemberOfThisClub) {
+//                log.warn("Participation denied for user {} in their own club's event (clubId: {})", authenticatedUserId, clubId);
+//                throw new ParticipationDeniedException("Club members cannot participate in their own club's events.");
+//            }
+//        }
+//
+//        // Step 3: Proceed with the existing logic if the checks pass
+//        Event event = eventRepository.findByIdAndClubId(eventId, clubId)
+//                .orElseThrow(() -> new EventNotFoundException("Event not found"));
+//
+//        if (participantRepository.existsByEventIdAndUserId(eventId, participantRequestDto.getUserId())) {
+//            throw new DuplicateParticipationException("User already participating in this event");
+//        }
+//
+//        EventParticipant participant = new EventParticipant();
+//        participant.setEventId(eventId);
+//        participant.setUserId(participantRequestDto.getUserId());
+//
+//        EventParticipant savedParticipant = participantRepository.save(participant);
+//        log.info("Participant saved: {}", savedParticipant);
+//
+//        participantRequestDto.setEventId(eventId);
+//        eventKafkaProducer.sendEventParticipationNotification(participantRequestDto);
+//        log.info("Event participation notification queued for user: {}", participantRequestDto.getUserId(), eventId);
+//
+//        return mapToParticipantResponseDto(savedParticipant);
+//    }
 
-        String userRole = jwt.getClaimAsStringList("roles").get(0);
-
-        // This check will now work correctly without a NullPointerException
-        if (authenticatedUserId == null || !authenticatedUserId.equals(participantRequestDto.getUserId())) {
-            throw new AccessDeniedException("You can only register yourself for an event.");
-        }
-
-        // Step 2: Check the business rule for Club Members
-        if ("ROLE_CLUB_MEMBER".equals(userRole)) {
-            log.info("User is a CLUB_MEMBER. Checking if they belong to this club...");
-            // Make an authenticated call to club-service
-            boolean isMemberOfThisClub = clubClient.isMember(clubId, authenticatedUserId);
-
-            if (isMemberOfThisClub) {
-                log.warn("Participation denied for user {} in their own club's event (clubId: {})", authenticatedUserId, clubId);
-                throw new ParticipationDeniedException("Club members cannot participate in their own club's events.");
-            }
-        }
-
-        // Step 3: Proceed with the existing logic if the checks pass
-        Event event = eventRepository.findByIdAndClubId(eventId, clubId)
+    // --- ADD THIS NEW METHOD ---
+    public OrderResponse startRegistration(Long clubId, Long eventId, RegistrationRequestDto request) {
+        // 1. Validate the event exists and belongs to the club.
+        eventRepository.findByIdAndClubId(eventId, clubId)
                 .orElseThrow(() -> new EventNotFoundException("Event not found"));
 
-        if (participantRepository.existsByEventIdAndUserId(eventId, participantRequestDto.getUserId())) {
-            throw new DuplicateParticipationException("User already participating in this event");
+        // 2. Check if the user is already registered to prevent double payment.
+        if (participantRepository.existsByEventIdAndUserId(eventId, request.getUserId())) {
+            throw new DuplicateParticipationException("You are already registered for this event.");
         }
 
-        EventParticipant participant = new EventParticipant();
-        participant.setEventId(eventId);
-        participant.setUserId(participantRequestDto.getUserId());
+        // 3. Prepare the request for the payment-service.
+        OrderRequest orderRequest = new OrderRequest();
+        orderRequest.setAmount(request.getAmount());
+        orderRequest.setCurrency("INR");
 
-        EventParticipant savedParticipant = participantRepository.save(participant);
-        log.info("Participant saved: {}", savedParticipant);
+        log.info("Requesting payment order creation for event {} and user {}", eventId, request.getUserId());
 
-        participantRequestDto.setEventId(eventId);
-        eventKafkaProducer.sendEventParticipationNotification(participantRequestDto);
-        log.info("Event participation notification queued for user: {}", participantRequestDto.getUserId(), eventId);
-
-        return mapToParticipantResponseDto(savedParticipant);
+        // 4. Call the payment-service to create a Razorpay order.
+        return paymentClient.createOrder(orderRequest);
     }
-
 
     public List<ParticipantResponseDto> getEventParticipants(Long clubId, Long eventId) {
         Event event = eventRepository.findByIdAndClubId(eventId, clubId)

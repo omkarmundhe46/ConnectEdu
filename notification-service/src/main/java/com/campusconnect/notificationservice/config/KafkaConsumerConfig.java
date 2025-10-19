@@ -10,6 +10,7 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import com.campusconnect.notificationservice.dto.ParticipantRegisteredEvent; // Import new DTO
 
 import java.util.HashMap;
 import java.util.Map;
@@ -98,6 +99,18 @@ public class KafkaConsumerConfig {
     public ConcurrentKafkaListenerContainerFactory<String, EventParticipationDTO> eventParticipationListenerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, EventParticipationDTO> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(eventParticipationConsumerFactory());
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, ParticipantRegisteredEvent> participantRegisteredConsumerFactory() {
+        return new DefaultKafkaConsumerFactory<>(consumerConfigs(ParticipantRegisteredEvent.class));
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, ParticipantRegisteredEvent> participantRegisteredListenerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, ParticipantRegisteredEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(participantRegisteredConsumerFactory());
         return factory;
     }
 }

@@ -26,6 +26,8 @@ application:
 
 
 eureka:
+  instance:
+    prefer-ip-address: true # Add this line
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka

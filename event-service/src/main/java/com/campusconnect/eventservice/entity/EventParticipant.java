@@ -29,6 +29,20 @@ public class EventParticipant {
     @Column(name = "registered_at", updatable = false)
     private LocalDateTime registeredAt;
 
+    // --- ADD NEW FIELDS ---
+    @Column(nullable = false)
+    private String college;
+
+    @Column(name = "mobile_number", nullable = false)
+    private String mobileNumber;
+
+    @Column(nullable = false)
+    private String address;
+
+    @Column(name = "payment_id", unique = true)
+    private String paymentId; // To store the Razorpay Transaction ID
+
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id", insertable = false, updatable = false)
     private Event event;

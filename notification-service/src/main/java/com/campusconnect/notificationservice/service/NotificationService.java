@@ -137,7 +137,7 @@ public class NotificationService {
 	 * Notify a user when they participate in an event
 	 */
 
-	public NotificationResponse notifyEventParticipation(EventParticipationDTO request) {
+	public NotificationResponse notifyEventParticipation(ParticipantRegisteredEvent request) {
 
 		log.info("Received participation notification request: userId={}, eventId={}", request.getUserId(),
 				request.getEventId());

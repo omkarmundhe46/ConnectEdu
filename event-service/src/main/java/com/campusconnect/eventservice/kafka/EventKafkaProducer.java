@@ -2,6 +2,7 @@ package com.campusconnect.eventservice.kafka;
 
 import com.campusconnect.eventservice.dto.EventParticipationDTO;
 import com.campusconnect.eventservice.dto.EventResponseDto; // Use this DTO
+import com.campusconnect.eventservice.dto.ParticipantRegisteredEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -15,6 +16,7 @@ public class EventKafkaProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private static final String EVENT_CREATED_TOPIC = "event-created-topic";
     private static final String EVENT_PARTICIPATION_TOPIC = "event-participation-topic";
+    private static final String PARTICIPANT_REGISTERED_TOPIC = "participant-registered-topic";
 
     // --- THIS IS THE FIX ---
     // Change the method signature to accept an EventResponseDto, which matches what the controller is sending.
@@ -38,4 +40,10 @@ public class EventKafkaProducer {
             log.error("Failed to send participation notification for user {}: {}", request.getUserId(), e.getMessage());
         }
     }
+    // ADD THIS NEW METHOD
+    public void sendParticipantRegisteredNotification(ParticipantRegisteredEvent event) {
+        log.info("Sending participant registered notification to Kafka topic: {}", PARTICIPANT_REGISTERED_TOPIC);
+        kafkaTemplate.send(PARTICIPANT_REGISTERED_TOPIC, event);
+    }
+
 }

@@ -104,14 +104,14 @@ public class EventController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{clubId}/events/{eventId}/participants")
-    @PreAuthorize("isAuthenticated()") // Any logged-in user can attempt to participate
-    public ResponseEntity<ParticipantResponseDto> addParticipantToEvent(@PathVariable Long clubId, @PathVariable Long eventId,
-                                                                        @Valid @RequestBody EventParticipationDTO participantRequestDto) {
-        // Business logic for who can participate should be inside the service layer
-        ParticipantResponseDto participant = eventService.addParticipantToEvent(clubId, eventId, participantRequestDto);
-        return new ResponseEntity<>(participant, HttpStatus.CREATED);
-    }
+//    @PostMapping("/{clubId}/events/{eventId}/participants")
+//    @PreAuthorize("isAuthenticated()") // Any logged-in user can attempt to participate
+//    public ResponseEntity<ParticipantResponseDto> addParticipantToEvent(@PathVariable Long clubId, @PathVariable Long eventId,
+//                                                                        @Valid @RequestBody EventParticipationDTO participantRequestDto) {
+//        // Business logic for who can participate should be inside the service layer
+//        ParticipantResponseDto participant = eventService.addParticipantToEvent(clubId, eventId, participantRequestDto);
+//        return new ResponseEntity<>(participant, HttpStatus.CREATED);
+//    }
 
     @GetMapping("/{clubId}/events/{eventId}/participants")
     @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_COLLEGE_ADMIN')")
@@ -223,6 +223,20 @@ public class EventController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.getAuthorities().stream()
                 .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_CLUB_ADMIN"));
+    }
+
+    // THIS IS THE NEW STARTING POINT FOR REGISTRATION
+    @PostMapping("/{clubId}/events/{eventId}/register")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderResponse> startRegistration(
+            @PathVariable Long clubId,
+            @PathVariable Long eventId,
+            @RequestBody RegistrationRequestDto request) {
+
+        // We get the user ID from the token to prevent impersonation.
+        request.setUserId(getAuthenticatedUserId());
+
+        return ResponseEntity.ok(eventService.startRegistration(clubId, eventId, request));
     }
 
 

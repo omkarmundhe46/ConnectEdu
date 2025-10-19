@@ -34,6 +34,8 @@ application:
       secret-key: NjdFNkEzRDA3RTY4NkM1OUQxN0E5RkU4NzQ2Njg5QzI3MjgzNTZFRDE3RTFCOTE1RkY1NEZDRTE1NTYyN0IzNA==
 
 eureka:
+  instance:
+    prefer-ip-address: true # Add this line
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka
