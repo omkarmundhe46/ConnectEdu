@@ -173,11 +173,19 @@ public class EventController {
 	}
 
 
-    // --- HELPER METHODS FOR SECURITY CHECKS ---
+    // ... inside your EventController class's helper methods ...
+
     private Long getAuthenticatedUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Jwt jwt = (Jwt) authentication.getPrincipal();
-        return jwt.getClaim("userId"); // Assuming your JWT from user-service has a 'userId' claim
+
+        // --- APPLY THE SAME FIX HERE ---
+        Object userIdObj = jwt.getClaim("userId");
+        if (userIdObj instanceof Number) {
+            return ((Number) userIdObj).longValue();
+        }
+        // Return null or throw an exception if the claim is missing/invalid
+        throw new IllegalStateException("User ID not found in token or is not a number.");
     }
 
     // ... inside your EventController class

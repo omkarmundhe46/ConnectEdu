@@ -17,6 +17,13 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+
+application:
+  security:
+    jwt:
+      # PASTE THE EXACT SAME SECRET KEY FROM YOUR USER-SERVICE
+      secret-key: NjdFNkEzRDA3RTY4NkM1OUQxN0E5RkU4NzQ2Njg5QzI3MjgzNTZFRDE3RTFCOTE1RkY1NEZDRTE1NTYyN0IzNA==
+
 server:
   port: 8084
 

@@ -40,100 +40,81 @@ public class DiscussionService {
     @Value("${file.upload.dir}")
     private String uploadDir;
 
-    public MessageResponseDto sendTextMessage(Long eventId, MessageRequestDto messageRequestDto) {
-        validateMembership(eventId, messageRequestDto.getUserId());
-        
-        if (messageRequestDto.getMessageType() == DiscussionMessage.MessageType.TEXT && 
-            (messageRequestDto.getContent() == null || messageRequestDto.getContent().trim().isEmpty())) {
+    // This method is now called by the secure controller, which sets the userId from the JWT
+    public MessageResponseDto sendTextMessage(Long clubId, Long eventId, MessageRequestDto messageRequestDto) {
+        validateMembership(clubId, messageRequestDto.getUserId());
+        if (messageRequestDto.getMessageType() != DiscussionMessage.MessageType.TEXT ||
+                (messageRequestDto.getContent() == null || messageRequestDto.getContent().trim().isEmpty())) {
             throw new IllegalArgumentException("Content cannot be empty for text messages");
         }
-        
+
         DiscussionMessage message = new DiscussionMessage();
         message.setEventId(eventId);
         message.setUserId(messageRequestDto.getUserId());
         message.setContent(messageRequestDto.getContent());
-        message.setMessageType(messageRequestDto.getMessageType());
-        
+        message.setMessageType(DiscussionMessage.MessageType.TEXT);
+
         DiscussionMessage savedMessage = messageRepository.save(message);
         return mapToResponseDto(savedMessage);
     }
 
-    public MessageResponseDto sendFileMessage(Long eventId, Long userId, MultipartFile file, DiscussionMessage.MessageType messageType) {
-        validateMembership(eventId, userId);
-        
+    public MessageResponseDto sendFileMessage(Long clubId, Long eventId, Long userId, MultipartFile file, DiscussionMessage.MessageType messageType) {
+        validateMembership(clubId, userId);
+
         if (file.isEmpty()) {
             throw new FileUploadException("File cannot be empty");
         }
-        
+
         String fileUrl = saveFile(file);
-        
+
         DiscussionMessage message = new DiscussionMessage();
         message.setEventId(eventId);
         message.setUserId(userId);
         message.setFileUrl(fileUrl);
         message.setMessageType(messageType);
-        
+
         DiscussionMessage savedMessage = messageRepository.save(message);
         return mapToResponseDto(savedMessage);
     }
 
-    public List<MessageResponseDto> getEventMessages(Long eventId, Long userId) {
-        validateMembership(eventId, userId);
-        
+    public List<MessageResponseDto> getEventMessages(Long clubId, Long eventId, Long userId) {
+        validateMembership(clubId, userId);
+
         return messageRepository.findByEventIdOrderBySentAtAsc(eventId).stream()
                 .map(this::mapToResponseDto)
                 .collect(Collectors.toList());
     }
 
-    public List<MessageResponseDto> getEventAllMessages(Long clubId, Long eventId) {
-        validateMembership(eventId, clubId);
-        return messageRepository.findByEventIdOrderBySentAtAsc(eventId).stream()
-                .map(this::mapToResponseDto)
-                .collect(Collectors.toList());
-    }
-
-    public void deleteMessage(Long messageId, Long userId) {
+    public void deleteMessage(Long clubId, Long eventId, Long messageId, Long userId) {
         DiscussionMessage message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new MessageNotFoundException("Message not found with id: " + messageId));
-        
-        if (!message.getUserId().equals(userId) && !isClubAdmin(message.getEventId(), userId)) {
-            throw new NotMemberException("Only sender or club admin can delete messages");
+
+        // The fine-grained authorization check now passes the clubId
+        if (!message.getUserId().equals(userId) && !isClubAdmin(clubId, userId)) {
+            throw new NotMemberException("You are not authorized to delete this message");
         }
-        
+
         messageRepository.delete(message);
     }
 
-    private void validateMembership(Long eventId, Long userId) {
-        // Validate user exists
+    // --- API IMPROVEMENT: Authorization is now more direct ---
+    private void validateMembership(Long clubId, Long userId) {
+        // We no longer need to fetch the event details just to get the clubId.
+        // We can check membership directly.
         try {
-            userClient.getUserById(userId);
-        } catch (FeignException.NotFound e) {
-            throw new UserNotFoundException("User not found with id: " + userId);
-        }
-        
-        // Get event details
-        EventDto event;
-        try {
-            event = eventClient.getEventDetails(eventId);
-        } catch (FeignException.NotFound e) {
-            throw new EventNotFoundException("Event not found with id: " + eventId);
-        }
-        
-        // Check if user is member of the event's club
-        try {
-            Boolean isMember = clubClient.checkMembership(event.getClubId(), userId);
-            if (!isMember) {
+            Boolean isMember = clubClient.checkMembership(clubId, userId);
+            if (isMember == null || !isMember) {
                 throw new NotMemberException("User is not a member of the club that owns this event");
             }
-        } catch (FeignException.NotFound e) {
-            throw new NotMemberException("User is not a member of the club that owns this event");
+        } catch (FeignException e) {
+            throw new NotMemberException("Could not verify club membership.");
         }
     }
 
-    private boolean isClubAdmin(Long eventId, Long userId) {
+    private boolean isClubAdmin(Long clubId, Long userId) {
         try {
-            EventDto event = eventClient.getEventDetails(eventId);
-            String role = clubClient.getMemberRole(event.getClubId(), userId);
+            // This check is now more direct as well.
+            String role = clubClient.getMemberRole(clubId, userId);
             return "PRESIDENT".equals(role) || "VICE_PRESIDENT".equals(role);
         } catch (FeignException e) {
             return false;

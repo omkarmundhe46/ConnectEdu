@@ -14,8 +14,13 @@ import feign.FeignException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -87,14 +92,40 @@ public class EventService {
     }
 
     public ParticipantResponseDto addParticipantToEvent(Long clubId, Long eventId, EventParticipationDTO participantRequestDto) {
-        Event event = eventRepository.findByIdAndClubId(eventId, clubId)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + eventId + " for club: " + clubId));
-
-        try {
-            userClient.getUserById(participantRequestDto.getUserId());
-        } catch (FeignException.NotFound e) {
-            throw new UserNotFoundException("User not found with id: " + participantRequestDto.getUserId());
+        // Step 1: Get the authenticated user's details from the JWT
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        // --- THIS IS THE FIX ---
+        // Safely get the userId claim and convert it from Integer to Long.
+        Object userIdObj = jwt.getClaim("userId");
+        Long authenticatedUserId = null;
+        if (userIdObj instanceof Number) {
+            authenticatedUserId = ((Number) userIdObj).longValue();
         }
+        // --- END OF FIX ---
+
+        String userRole = jwt.getClaimAsStringList("roles").get(0);
+
+        // This check will now work correctly without a NullPointerException
+        if (authenticatedUserId == null || !authenticatedUserId.equals(participantRequestDto.getUserId())) {
+            throw new AccessDeniedException("You can only register yourself for an event.");
+        }
+
+        // Step 2: Check the business rule for Club Members
+        if ("ROLE_CLUB_MEMBER".equals(userRole)) {
+            log.info("User is a CLUB_MEMBER. Checking if they belong to this club...");
+            // Make an authenticated call to club-service
+            boolean isMemberOfThisClub = clubClient.isMember(clubId, authenticatedUserId);
+
+            if (isMemberOfThisClub) {
+                log.warn("Participation denied for user {} in their own club's event (clubId: {})", authenticatedUserId, clubId);
+                throw new ParticipationDeniedException("Club members cannot participate in their own club's events.");
+            }
+        }
+
+        // Step 3: Proceed with the existing logic if the checks pass
+        Event event = eventRepository.findByIdAndClubId(eventId, clubId)
+                .orElseThrow(() -> new EventNotFoundException("Event not found"));
 
         if (participantRepository.existsByEventIdAndUserId(eventId, participantRequestDto.getUserId())) {
             throw new DuplicateParticipationException("User already participating in this event");
@@ -108,9 +139,8 @@ public class EventService {
         log.info("Participant saved: {}", savedParticipant);
 
         participantRequestDto.setEventId(eventId);
-
         eventKafkaProducer.sendEventParticipationNotification(participantRequestDto);
-        log.info("Event participation notification queued for user: {} in event: {}", participantRequestDto.getUserId(), eventId);
+        log.info("Event participation notification queued for user: {}", participantRequestDto.getUserId(), eventId);
 
         return mapToParticipantResponseDto(savedParticipant);
     }
@@ -180,5 +210,13 @@ public class EventService {
 
         event.setCertificatesGenerated(true);
         eventRepository.save(event);
+    }
+
+    // ADD THIS NEW METHOD: For the discussion service's cleanup scheduler
+    public List<EventResponseDto> findEventsEndedBefore(LocalDate date) {
+        LocalDateTime dateTime = date.atStartOfDay();
+        return eventRepository.findByDateBefore(dateTime).stream()
+                .map(this::mapToEventResponseDto)
+                .collect(Collectors.toList());
     }
 }

@@ -21,4 +21,6 @@ public class EventRequestDto {
 
     @NotBlank(message = "Location is required")
     private String location;
+
+
 }

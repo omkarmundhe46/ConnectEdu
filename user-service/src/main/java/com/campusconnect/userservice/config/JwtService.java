@@ -50,6 +50,7 @@ public class JwtService {
         // 2. If the user is a CLUB_ADMIN, add their managedClubId.
         if (userDetails instanceof User) {
             User user = (User) userDetails;
+            extraClaims.put("userId", user.getId());
             if (user.getManagedClubId() != null) {
                 extraClaims.put("managedClubId", user.getManagedClubId());
             }

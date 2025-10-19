@@ -43,6 +43,6 @@ public class Club {
     @OneToMany(mappedBy = "club", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ClubMember> members;
 
-    @OneToMany(mappedBy = "clubId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Event> events;
+//    @OneToMany(mappedBy = "clubId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+//    private List<Event> events;
 }

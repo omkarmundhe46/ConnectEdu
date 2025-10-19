@@ -16,4 +16,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findByDateBeforeAndCompletedFalse(LocalDateTime date);
     List<Event> findByDateLessThanEqualAndCompletedFalse(LocalDateTime dateTime);
 
+    // ADD THIS METHOD: To find events that ended on or before a specific date
+    List<Event> findByDateBefore(LocalDateTime date);
+
 }

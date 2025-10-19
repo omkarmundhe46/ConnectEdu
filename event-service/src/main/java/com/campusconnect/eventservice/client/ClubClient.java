@@ -9,4 +9,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 public interface ClubClient {
     @GetMapping("/api/clubs/{id}")
     ClubDto getClubById(@PathVariable("id") Long id);
+
+    // ADD THIS NEW METHOD
+    @GetMapping("/api/clubs/{clubId}/members/{userId}/check")
+    boolean isMember(@PathVariable("clubId") Long clubId, @PathVariable("userId") Long userId);
 }
