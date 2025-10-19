@@ -181,6 +181,7 @@ public class EventService {
         dto.setClubId(event.getClubId());
         dto.setCreatedAt(event.getCreatedAt());
         dto.setUpdatedAt(event.getUpdatedAt());
+        dto.setMeetingLink(event.getMeetingLink());
         return dto;
     }
 
@@ -218,5 +219,15 @@ public class EventService {
         return eventRepository.findByDateBefore(dateTime).stream()
                 .map(this::mapToEventResponseDto)
                 .collect(Collectors.toList());
+    }
+
+    // ADD THIS NEW METHOD
+    public EventResponseDto updateMeetingLink(Long clubId, Long eventId, String meetingLink) {
+        Event event = eventRepository.findByIdAndClubId(eventId, clubId)
+                .orElseThrow(() -> new EventNotFoundException("Event not found"));
+
+        event.setMeetingLink(meetingLink);
+        Event updatedEvent = eventRepository.save(event);
+        return mapToEventResponseDto(updatedEvent);
     }
 }

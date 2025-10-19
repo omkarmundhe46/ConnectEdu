@@ -172,6 +172,19 @@ public class EventController {
 		return ResponseEntity.ok().build();
 	}
 
+    // ADD THIS NEW ENDPOINT
+    @PutMapping("/{clubId}/events/{eventId}/meeting-link")
+    @PreAuthorize("hasAuthority('ROLE_CLUB_ADMIN')")
+    public ResponseEntity<EventResponseDto> updateMeetingLink(
+            @PathVariable Long clubId,
+            @PathVariable Long eventId,
+            @RequestBody String meetingLink) {
+
+        validateClubOwnership(clubId); // Important security check!
+        EventResponseDto updatedEvent = eventService.updateMeetingLink(clubId, eventId, meetingLink);
+        return ResponseEntity.ok(updatedEvent);
+    }
+
 
     // ... inside your EventController class's helper methods ...
 
@@ -211,4 +224,6 @@ public class EventController {
         return authentication.getAuthorities().stream()
                 .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_CLUB_ADMIN"));
     }
+
+
 }

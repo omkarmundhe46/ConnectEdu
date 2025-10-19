@@ -14,4 +14,5 @@ public class EventResponseDto {
     private Long clubId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String meetingLink;
 }

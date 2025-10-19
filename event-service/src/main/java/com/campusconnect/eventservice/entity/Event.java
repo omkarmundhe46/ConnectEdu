@@ -41,7 +41,9 @@ public class Event {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-
+    // ADD THIS FIELD
+    @Column(name = "meeting_link")
+    private String meetingLink;
     
     @Column(nullable = false)
     private Boolean certificatesGenerated = false;
