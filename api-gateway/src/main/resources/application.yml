@@ -1,0 +1,43 @@
+server:
+  port: 8080 # The single entry point for your entire application
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        # Route for User Service
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/auth/**, /api/users/**, /internal/api/users/**
+
+        # Route for Club Service
+        - id: club-service
+          uri: lb://club-service
+          predicates:
+            - Path=/api/clubs/**, /internal/api/clubs/**
+
+        # Route for Event Service
+        - id: event-service
+          uri: lb://event-service
+          predicates:
+            - Path=/api/events/**, /internal/api/events/**
+
+        # Route for Discussion Service
+        - id: discussion-service
+          uri: lb://discussion-service
+          predicates:
+            - Path=/api/discussions/**, /internal/api/discussions/**
+
+        # Route for Certificate Service (only the download endpoint)
+        - id: certificate-service
+          uri: lb://certificate-service
+          predicates:
+            - Path=/api/certificates/**

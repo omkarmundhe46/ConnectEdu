@@ -49,6 +49,11 @@ application:
 #            client-secret: your-github-client-secret
 
 
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
 
 
 server:

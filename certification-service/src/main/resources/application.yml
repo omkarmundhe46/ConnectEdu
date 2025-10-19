@@ -27,6 +27,11 @@ spring:
         # Prevents sending the class name in message headers, fixing the error
         spring.json.add.type.headers: false
 
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
 server:
   port: 8086
 
