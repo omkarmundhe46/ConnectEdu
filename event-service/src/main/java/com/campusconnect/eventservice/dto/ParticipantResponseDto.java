@@ -10,4 +10,10 @@ public class ParticipantResponseDto {
     private Long userId;
     private Long eventId;
     private LocalDateTime registeredAt;
+
+    // --- ADD THESE FIELDS ---
+    private String college;
+    private String mobileNumber;
+    private String address;
+    private String paymentId;
 }

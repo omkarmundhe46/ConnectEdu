@@ -32,12 +32,18 @@ public class ParticipantService {
         List<EventParticipant> participants = eventParticipantRepository.findByEventId(eventId);
 
         // 3️⃣ Map to DTO (no user details here)
+        // --- UPDATED MAPPING ---
         return participants.stream().map(participant -> {
             ParticipantResponseDto dto = new ParticipantResponseDto();
             dto.setId(participant.getId());
             dto.setEventId(participant.getEventId());
             dto.setUserId(participant.getUserId());
             dto.setRegisteredAt(participant.getRegisteredAt());
+            // Map the new fields
+            dto.setCollege(participant.getCollege());
+            dto.setMobileNumber(participant.getMobileNumber());
+            dto.setAddress(participant.getAddress());
+            dto.setPaymentId(participant.getPaymentId());
             return dto;
         }).collect(Collectors.toList());
     }

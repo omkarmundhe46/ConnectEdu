@@ -71,6 +71,13 @@ public class UserService {
         return mapToResponseDto(user);
     }
 
+    // --- ADD THIS NEW METHOD FOE EXCEL ---
+    public List<UserResponseDto> getUsersByIds(List<Long> userIds) {
+        return userRepository.findAllById(userIds).stream()
+                .map(this::mapToResponseDto)
+                .collect(Collectors.toList());
+    }
+
     public UserResponseDto getUserByEmail(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));

@@ -7,82 +7,82 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka
-spring:
-  application:
-    name: api-gateway
-  cloud:
-    gateway:
-      routes:
-        # Route for User Service
-        - id: user-service
-          uri: lb://user-service
-          predicates:
-            - Path=/auth/**, /api/users/**, /internal/api/users/**
-
-        # Route for Club Service
-        - id: club-service
-          uri: lb://club-service
-          predicates:
-            - Path=/api/clubs/**, /internal/api/clubs/**
-
-        # Route for Event Service
-        - id: event-service
-          uri: lb://event-service
-          predicates:
-            - Path=/api/events/**, /internal/api/events/**
-
-        # Route for Discussion Service
-        - id: discussion-service
-          uri: lb://discussion-service
-          predicates:
-            - Path=/api/discussions/**, /internal/api/discussions/**
-
-        # Route for Certificate Service (only the download endpoint)
-        - id: certificate-service
-          uri: lb://certificate-service
-          predicates:
-            - Path=/api/certificates/**
-
-
-
-#               added because event service not work with port 8080
-
 #spring:
 #  application:
 #    name: api-gateway
 #  cloud:
 #    gateway:
 #      routes:
-#        # Route for User Service (No changes needed)
+#        # Route for User Service
 #        - id: user-service
 #          uri: lb://user-service
 #          predicates:
 #            - Path=/auth/**, /api/users/**, /internal/api/users/**
 #
-#        # --- START OF FIX ---
-#        # 1. More specific route for Event Service (MUST COME FIRST)
-#        # This route matches URLs that have /events/ in them.
-#        - id: event-service
-#          uri: lb://event-service
-#          predicates:
-#            - Path=/api/clubs/{clubId}/events/**, /internal/api/events/**
-#
-#        # 2. General route for Club Service (comes after the more specific one)
-#        # This route will now only handle requests for clubs themselves.
+#        # Route for Club Service
 #        - id: club-service
 #          uri: lb://club-service
 #          predicates:
 #            - Path=/api/clubs/**, /internal/api/clubs/**
-#        # --- END OF FIX ---
 #
-#        # Route for Discussion Service (No changes needed)
+#        # Route for Event Service
+#        - id: event-service
+#          uri: lb://event-service
+#          predicates:
+#            - Path=/api/events/**, /internal/api/events/**
+#
+#        # Route for Discussion Service
 #        - id: discussion-service
 #          uri: lb://discussion-service
 #          predicates:
-#            - Path=/api/clubs/{clubId}/events/{eventId}/discussions/**
+#            - Path=/api/discussions/**, /internal/api/discussions/**
 #
-#        # Route for Certificate Service (No changes needed)
+#        # Route for Certificate Service (only the download endpoint)
 #        - id: certificate-service
 #          uri: lb://certificate-service
 #          predicates:
 #            - Path=/api/certificates/**
+
+
+
+#               added because event service not work with port 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        # Route for User Service (No changes needed)
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/auth/**, /api/users/**, /internal/api/users/**
+
+        # --- START OF FIX ---
+        # 1. More specific route for Event Service (MUST COME FIRST)
+        # This route matches URLs that have /events/ in them.
+        - id: event-service
+          uri: lb://event-service
+          predicates:
+            - Path=/api/clubs/{clubId}/events/**, /internal/api/events/**
+
+        # 2. General route for Club Service (comes after the more specific one)
+        # This route will now only handle requests for clubs themselves.
+        - id: club-service
+          uri: lb://club-service
+          predicates:
+            - Path=/api/clubs/**, /internal/api/clubs/**
+        # --- END OF FIX ---
+
+        # Route for Discussion Service (No changes needed)
+        - id: discussion-service
+          uri: lb://discussion-service
+          predicates:
+            - Path=/api/clubs/{clubId}/events/{eventId}/discussions/**
+
+        # Route for Certificate Service (No changes needed)
+        - id: certificate-service
+          uri: lb://certificate-service
+          predicates:
+            - Path=/api/certificates/**

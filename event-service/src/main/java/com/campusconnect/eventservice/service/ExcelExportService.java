@@ -1,8 +1,10 @@
 package com.campusconnect.eventservice.service;
 
 import com.campusconnect.eventservice.client.UserClient;
+import com.campusconnect.eventservice.dto.EventResponseDto;
 import com.campusconnect.eventservice.dto.ParticipantResponseDto;
 import com.campusconnect.eventservice.dto.UserDto;
+import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
@@ -10,21 +12,30 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor // Use constructor injection
 public class ExcelExportService {
 
     private final UserClient userClient;
+    private final ParticipantService participantService;
+    private final EventService eventService;
 
-    public ExcelExportService(UserClient userClient) {
-        this.userClient = userClient;
-    }
+    public byte[] generateParticipantsExcel(Long clubId, Long eventId) throws Exception {
+        // 1. Get Event and Participant data
+        EventResponseDto event = eventService.getClubEventById(clubId, eventId);
+        List<ParticipantResponseDto> participants = participantService.getParticipantsByClubAndEvent(clubId, eventId);
 
-    public byte[] generateParticipantsExcel(List<ParticipantResponseDto> participants,
-                                            String clubName,
-                                            String eventName) throws Exception {
+        // 2. Efficiently fetch all user details in one call
+        List<Long> userIds = participants.stream().map(ParticipantResponseDto::getUserId).collect(Collectors.toList());
+        Map<Long, UserDto> userMap = userClient.getUsersByIds(userIds).stream()
+                .collect(Collectors.toMap(UserDto::getId, user -> user));
+
+        // 3. Build the Excel Workbook
         Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("Participants");
+        Sheet sheet = workbook.createSheet("Participants for " + event.getName());
 
         // Header style
         CellStyle headerStyle = workbook.createCellStyle();
@@ -32,48 +43,38 @@ public class ExcelExportService {
         headerFont.setBold(true);
         headerStyle.setFont(headerFont);
 
-        int rowIdx = 0;
-
-        // Title row with Event + Club
-        Row titleRow = sheet.createRow(rowIdx++);
-        titleRow.createCell(0).setCellValue("Club: " + clubName + " | Event: " + eventName);
-
-        rowIdx++; // blank line
-
-        // Column headers
-        String[] columns = {"Participant ID", "User ID", "Name", "Email", "Department", "Registered At"};
-        Row headerRow = sheet.createRow(rowIdx++);
+        // Define Columns
+        String[] columns = {
+                "Participant ID", "User ID", "Name", "Email", "Department",
+                "College", "Mobile Number", "Address", "Transaction ID", "Registered At"
+        };
+        Row headerRow = sheet.createRow(0);
         for (int i = 0; i < columns.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(columns[i]);
             cell.setCellStyle(headerStyle);
         }
 
-        // Data rows
+        // Populate Data Rows
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-
+        int rowIdx = 1;
         for (ParticipantResponseDto p : participants) {
-            // Fetch user details by userId
-            UserDto user = null;
-            try {
-                user = userClient.getUserById(p.getUserId());
-            } catch (Exception e) {
-                // If user service fails, still generate row
-                System.err.println("Failed to fetch user details for ID " + p.getUserId() + ": " + e.getMessage());
-            }
-
+            UserDto user = userMap.get(p.getUserId()); // Fast lookup from map
             Row row = sheet.createRow(rowIdx++);
-            row.createCell(0).setCellValue(p.getId() != null ? p.getId() : 0);   // Participant ID
-            row.createCell(1).setCellValue(p.getUserId() != null ? p.getUserId() : 0); // User ID
-            row.createCell(2).setCellValue(user != null ? user.getName() : "");   // Name
-            row.createCell(3).setCellValue(user != null ? user.getEmail() : "");  // Email
-            row.createCell(4).setCellValue(user != null ? user.getDepartment() : ""); // Department
-            row.createCell(5).setCellValue(
-                    p.getRegisteredAt() != null ? p.getRegisteredAt().format(dtf) : ""
-            );
+
+            row.createCell(0).setCellValue(p.getId());
+            row.createCell(1).setCellValue(p.getUserId());
+            row.createCell(2).setCellValue(user != null ? user.getName() : "N/A");
+            row.createCell(3).setCellValue(user != null ? user.getEmail() : "N/A");
+            row.createCell(4).setCellValue(user != null ? user.getDepartment() : "N/A");
+            row.createCell(5).setCellValue(p.getCollege());
+            row.createCell(6).setCellValue(p.getMobileNumber());
+            row.createCell(7).setCellValue(p.getAddress());
+            row.createCell(8).setCellValue(p.getPaymentId());
+            row.createCell(9).setCellValue(p.getRegisteredAt() != null ? p.getRegisteredAt().format(dtf) : "");
         }
 
-        // Auto-size columns
+        // Auto-size columns for readability
         for (int i = 0; i < columns.length; i++) {
             sheet.autoSizeColumn(i);
         }
