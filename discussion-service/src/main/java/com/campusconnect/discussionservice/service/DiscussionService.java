@@ -36,9 +36,10 @@ public class DiscussionService {
     private final EventClient eventClient;
     private final UserClient userClient;
     private final ClubClient clubClient;
+    private final S3StorageService s3StorageService; // Inject the new service
     
-    @Value("${file.upload.dir}")
-    private String uploadDir;
+//    @Value("${file.upload.dir}")
+//    private String uploadDir;
 
     // This method is now called by the secure controller, which sets the userId from the JWT
     public MessageResponseDto sendTextMessage(Long clubId, Long eventId, MessageRequestDto messageRequestDto) {
@@ -58,6 +59,26 @@ public class DiscussionService {
         return mapToResponseDto(savedMessage);
     }
 
+//    public MessageResponseDto sendFileMessage(Long clubId, Long eventId, Long userId, MultipartFile file, DiscussionMessage.MessageType messageType) {
+//        validateMembership(clubId, userId);
+//
+//        if (file.isEmpty()) {
+//            throw new FileUploadException("File cannot be empty");
+//        }
+//
+//        String fileUrl = saveFile(file);
+//
+//        DiscussionMessage message = new DiscussionMessage();
+//        message.setEventId(eventId);
+//        message.setUserId(userId);
+//        message.setFileUrl(fileUrl);
+//        message.setMessageType(messageType);
+//
+//        DiscussionMessage savedMessage = messageRepository.save(message);
+//        return mapToResponseDto(savedMessage);
+//    }
+
+
     public MessageResponseDto sendFileMessage(Long clubId, Long eventId, Long userId, MultipartFile file, DiscussionMessage.MessageType messageType) {
         validateMembership(clubId, userId);
 
@@ -65,17 +86,20 @@ public class DiscussionService {
             throw new FileUploadException("File cannot be empty");
         }
 
-        String fileUrl = saveFile(file);
+        // --- THIS IS THE CHANGE ---
+        // Instead of saving locally, upload to S3 and get the public URL
+        String fileUrl = s3StorageService.uploadFile(file);
 
         DiscussionMessage message = new DiscussionMessage();
         message.setEventId(eventId);
         message.setUserId(userId);
-        message.setFileUrl(fileUrl);
+        message.setFileUrl(fileUrl); // Save the S3 URL
         message.setMessageType(messageType);
 
         DiscussionMessage savedMessage = messageRepository.save(message);
         return mapToResponseDto(savedMessage);
     }
+
 
     public List<MessageResponseDto> getEventMessages(Long clubId, Long eventId, Long userId) {
         validateMembership(clubId, userId);
@@ -121,23 +145,23 @@ public class DiscussionService {
         }
     }
 
-    private String saveFile(MultipartFile file) {
-        try {
-            String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-            Path uploadPath = Paths.get(uploadDir);
-            
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-            
-            Path filePath = uploadPath.resolve(fileName);
-            Files.copy(file.getInputStream(), filePath);
-            
-            return "/uploads/" + fileName;
-        } catch (IOException e) {
-            throw new FileUploadException("Failed to upload file: " + e.getMessage());
-        }
-    }
+//    private String saveFile(MultipartFile file) {
+//        try {
+//            String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+//            Path uploadPath = Paths.get(uploadDir);
+//
+//            if (!Files.exists(uploadPath)) {
+//                Files.createDirectories(uploadPath);
+//            }
+//
+//            Path filePath = uploadPath.resolve(fileName);
+//            Files.copy(file.getInputStream(), filePath);
+//
+//            return "/uploads/" + fileName;
+//        } catch (IOException e) {
+//            throw new FileUploadException("Failed to upload file: " + e.getMessage());
+//        }
+//    }
 
     private MessageResponseDto mapToResponseDto(DiscussionMessage message) {
         MessageResponseDto dto = new MessageResponseDto();

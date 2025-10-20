@@ -1,6 +1,7 @@
 package com.campusconnect.eventservice.controller;
 
 import com.campusconnect.eventservice.dto.EventResponseDto;
+import com.campusconnect.eventservice.dto.ParticipantResponseDto;
 import com.campusconnect.eventservice.service.EventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,5 +28,20 @@ public class InternalController {
     public List<EventResponseDto> getEventsEndedBefore(@RequestParam("date") String date) {
         LocalDate parsedDate = LocalDate.parse(date);
         return eventService.findEventsEndedBefore(parsedDate);
+    }
+    // --- ADD THESE TWO NEW ENDPOINTS for the scheduler ---
+
+    @GetMapping("/by-date/{date}")
+    public List<EventResponseDto> getEventsByDate(@PathVariable String date) {
+        LocalDate parsedDate = LocalDate.parse(date);
+        return eventService.findEventsByDate(parsedDate);
+    }
+
+    @GetMapping("/{eventId}/participants")
+    public List<ParticipantResponseDto> getEventParticipants(@PathVariable Long eventId) {
+        // We can reuse the existing service method, but we need the clubId.
+        // For simplicity, we can fetch the event first.
+        EventResponseDto event = eventService.getEventById(eventId);
+        return eventService.getEventParticipants(event.getClubId(), eventId);
     }
 }

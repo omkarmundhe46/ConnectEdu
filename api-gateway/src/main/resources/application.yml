@@ -53,11 +53,19 @@ spring:
   cloud:
     gateway:
       routes:
-        # Route for User Service (No changes needed)
+        # Route for User Service (no change)
         - id: user-service
           uri: lb://user-service
           predicates:
             - Path=/auth/**, /api/users/**, /internal/api/users/**
+
+        # --- START OF FIX ---
+        # 1. MOST SPECIFIC: The Discussion Service route must come first.
+        # It matches URLs containing /discussions/
+        - id: discussion-service
+          uri: lb://discussion-service
+          predicates:
+            - Path=/api/clubs/{clubId}/events/{eventId}/discussions/**
 
         # --- START OF FIX ---
         # 1. More specific route for Event Service (MUST COME FIRST)
@@ -75,11 +83,7 @@ spring:
             - Path=/api/clubs/**, /internal/api/clubs/**
         # --- END OF FIX ---
 
-        # Route for Discussion Service (No changes needed)
-        - id: discussion-service
-          uri: lb://discussion-service
-          predicates:
-            - Path=/api/clubs/{clubId}/events/{eventId}/discussions/**
+
 
         # Route for Certificate Service (No changes needed)
         - id: certificate-service

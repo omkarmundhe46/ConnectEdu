@@ -36,6 +36,7 @@ public class CertificateService {
     private final EventClient eventClient;
 //    private final NotificationClient notificationClient;
     private final CertificateKafkaProducer certificateKafkaProducer;
+    private final S3StorageService s3StorageService; // Inject the new service
 
     /**
      * Generate PDF bytes using JasperReports.
@@ -198,67 +199,176 @@ public class CertificateService {
 //    }
 
 
+    // manual flow of generating, saving and sending certificate : uses uploads folder to save files
     /**
      * MANUAL FLOW: This is your original method. It now uses a helper to avoid
      * re-generating the PDF, but its primary function is to send the Kafka notification.
      */
-    public Certificate generateSaveAndSend(Long eventId, Long userId) {
-        // Step 1: Ensure a certificate file exists by finding or creating it.
-        Certificate certificate = findOrCreateCertificate(eventId, userId);
-
-        // Step 2: Read the PDF from disk and send the Kafka message for email notification.
-        try {
-            UserResponseDto user = userClient.getUserById(userId);
-            EventResponseDto event = eventClient.getEventById(eventId);
-            byte[] pdfBytes = Files.readAllBytes(Paths.get(certificate.getFilePath()));
-
-            CertificateNotificationRequest notificationRequest = new CertificateNotificationRequest(
-                    userId, user.getName(), user.getEmail(), event.getName(), event.getDate().toString(), pdfBytes
-            );
-
-            certificateKafkaProducer.sendCertificateNotification(notificationRequest);
-            log.info("Certificate email notification has been queued for user {}.", userId);
-
-            return certificate;
-        } catch (IOException e) {
-            log.error("Failed to read certificate file for notification: {}", e.getMessage());
-            throw new RuntimeException("Failed to read certificate for notification.", e);
-        }
-    }
-
+//    public Certificate generateSaveAndSend(Long eventId, Long userId) {
+//        // Step 1: Ensure a certificate file exists by finding or creating it.
+//        Certificate certificate = findOrCreateCertificate(eventId, userId);
+//
+//        // Step 2: Read the PDF from disk and send the Kafka message for email notification.
+//        try {
+//            UserResponseDto user = userClient.getUserById(userId);
+//            EventResponseDto event = eventClient.getEventById(eventId);
+//            byte[] pdfBytes = Files.readAllBytes(Paths.get(certificate.getFilePath()));
+//
+//            CertificateNotificationRequest notificationRequest = new CertificateNotificationRequest(
+//                    userId, user.getName(), user.getEmail(), event.getName(), event.getDate().toString(), pdfBytes
+//            );
+//
+//            certificateKafkaProducer.sendCertificateNotification(notificationRequest);
+//            log.info("Certificate email notification has been queued for user {}.", userId);
+//
+//            return certificate;
+//        } catch (IOException e) {
+//            log.error("Failed to read certificate file for notification: {}", e.getMessage());
+//            throw new RuntimeException("Failed to read certificate for notification.", e);
+//        }
+//    }
 
 
 
     /**
+     * MANUAL FLOW: Generates a certificate, uploads it to S3, and sends a notification.
+     */
+//    public Certificate generateSaveAndSend(Long eventId, Long userId) {
+//        // Step 1: Ensure a certificate exists and is stored in S3.
+//        Certificate certificate = findOrCreateCertificate(eventId, userId);
+//
+//        // Step 2: Download the PDF from S3 to get its bytes for the Kafka message.
+//        byte[] pdfBytes = s3StorageService.downloadFile(certificate.getFilePath());
+//
+//        UserResponseDto user = userClient.getUserById(userId);
+//        EventResponseDto event = eventClient.getEventById(eventId);
+//
+//        CertificateNotificationRequest notificationRequest = new CertificateNotificationRequest(
+//                userId, user.getName(), user.getEmail(), event.getName(), event.getDate().toString(), pdfBytes
+//        );
+//
+//        certificateKafkaProducer.sendCertificateNotification(notificationRequest);
+//        log.info("Certificate email notification has been queued for user {}.", userId);
+//
+//        return certificate;
+//    }
+
+
+    public Certificate generateSaveAndSend(Long eventId, Long userId) {
+        // --- REFACTORED LOGIC ---
+        // 1. Generate the PDF bytes first.
+        byte[] pdfBytes;
+        try {
+            pdfBytes = generateCertificatePdf(eventId, userId);
+        } catch (JRException e) {
+            log.error("Failed to generate PDF bytes for user {}: {}", userId, e.getMessage());
+            throw new RuntimeException("Failed to generate PDF.", e);
+        }
+
+        // 2. Ensure the certificate is created/updated and uploaded to S3.
+        Certificate certificate = findOrCreateAndUploadCertificate(eventId, userId, pdfBytes);
+
+        // 3. Send the notification using the bytes we already have. No need to re-download.
+        UserResponseDto user = userClient.getUserById(userId);
+        EventResponseDto event = eventClient.getEventById(eventId);
+        CertificateNotificationRequest notificationRequest = new CertificateNotificationRequest(
+                userId, user.getName(), user.getEmail(), event.getName(), event.getDate().toString(), pdfBytes
+        );
+        certificateKafkaProducer.sendCertificateNotification(notificationRequest);
+        log.info("Certificate email notification has been queued for user {}.", userId);
+
+        return certificate;
+    }
+
+
+
+    // manual method : for download certificate :  in upload folder
+    /**
      * NEW METHOD FOR DOWNLOAD FLOW:
      * Gets the certificate PDF bytes for direct download. It enforces the 7 PM rule.
+     */
+//    public byte[] getCertificateForDownload(Long eventId, Long userId) {
+//        // Step 1: Check the business rule (is it after 7 PM on the event day?)
+//        EventResponseDto event = eventClient.getEventById(eventId);
+//        LocalDate eventDate = event.getDate();
+//        LocalDateTime activationTime = LocalDateTime.of(eventDate, LocalTime.of(19, 0)); // 7 PM
+//
+//        if (LocalDateTime.now().isBefore(activationTime)) {
+//            throw new IllegalStateException("Certificate is not yet available for download. Please check back after 7 PM on the event date.");
+//        }
+//
+//        // Step 2: Find or create the certificate file
+//        Certificate certificate = findOrCreateCertificate(eventId, userId);
+//
+//        // Step 3: Read the PDF file from disk and return its bytes
+//        try {
+//            return Files.readAllBytes(Paths.get(certificate.getFilePath()));
+//        } catch (IOException e) {
+//            log.error("Could not read certificate file from path {}: {}", certificate.getFilePath(), e.getMessage());
+//            throw new RuntimeException("Error retrieving certificate file.", e);
+//        }
+//    }
+
+
+    /**
+     * DOWNLOAD FLOW: Gets the certificate from S3 for direct download.
      */
     public byte[] getCertificateForDownload(Long eventId, Long userId) {
         // Step 1: Check the business rule (is it after 7 PM on the event day?)
         EventResponseDto event = eventClient.getEventById(eventId);
         LocalDate eventDate = event.getDate();
-        LocalDateTime activationTime = LocalDateTime.of(eventDate, LocalTime.of(19, 0)); // 7 PM
+        LocalDateTime activationTime = LocalDateTime.of(eventDate, LocalTime.of(19, 0));
 
         if (LocalDateTime.now().isBefore(activationTime)) {
             throw new IllegalStateException("Certificate is not yet available for download. Please check back after 7 PM on the event date.");
         }
 
-        // Step 2: Find or create the certificate file
-        Certificate certificate = findOrCreateCertificate(eventId, userId);
+        // --- REFACTORED LOGIC ---
+        // 1. Ensure the certificate exists and is on S3 by calling the helper.
+        Certificate certificate = findOrCreateAndUploadCertificate(eventId, userId, null);
 
-        // Step 3: Read the PDF file from disk and return its bytes
-        try {
-            return Files.readAllBytes(Paths.get(certificate.getFilePath()));
-        } catch (IOException e) {
-            log.error("Could not read certificate file from path {}: {}", certificate.getFilePath(), e.getMessage());
-            throw new RuntimeException("Error retrieving certificate file.", e);
-        }
+        // 2. Download the now-guaranteed-to-exist file from S3.
+        return s3StorageService.downloadFile(certificate.getFilePath());
     }
+
+
 
     /**
      * NEW PRIVATE HELPER METHOD:
      * Checks if a certificate exists in the DB. If yes, it returns it.
      * If not, it generates the PDF, saves it, and returns the new DB record.
+     */
+//    private Certificate findOrCreateCertificate(Long eventId, Long userId) {
+//        Optional<Certificate> existingCert = certificateRepository.findByEventIdAndUserId(eventId, userId);
+//        if (existingCert.isPresent()) {
+//            log.info("Found existing certificate for user {} and event {}.", userId, eventId);
+//            return existingCert.get();
+//        }
+//
+//        log.info("No existing certificate found. Generating new one for user {} and event {}.", userId, eventId);
+//        try {
+//            byte[] pdf = generateCertificatePdf(eventId, userId);
+//
+//            // --- THIS IS THE CHANGE ---
+//            // Upload the generated PDF bytes to S3
+//            String fileUrl = s3StorageService.uploadPdf(pdfBytes, "event_" + eventId + "_user_" + userId + ".pdf");
+//
+//            Certificate certificate = new Certificate();
+//            certificate.setEventId(eventId);
+//            certificate.setUserId(userId);
+//            certificate.setFilePath(fileUrl); // Save the S3 URL
+//            certificate.setIssuedAt(LocalDateTime.now());
+//
+//            return certificateRepository.save(certificate);
+//
+//        } catch (Exception e) {
+//            log.error("Error in findOrCreateCertificate: {}", e.getMessage());
+//            throw new RuntimeException(e);
+//        }
+//    }
+
+    /**
+     * Helper method to find a certificate in the DB or create it and upload to S3.
      */
     private Certificate findOrCreateCertificate(Long eventId, Long userId) {
         Optional<Certificate> existingCert = certificateRepository.findByEventIdAndUserId(eventId, userId);
@@ -267,26 +377,76 @@ public class CertificateService {
             return existingCert.get();
         }
 
-        log.info("No existing certificate found. Generating new one for user {} and event {}.", userId, eventId);
+        log.info("No existing certificate found. Generating and uploading new one for user {} and event {}.", userId, eventId);
         try {
-            byte[] pdf = generateCertificatePdf(eventId, userId);
-            Path uploadsDir = Paths.get("uploads", "certificates");
-            Files.createDirectories(uploadsDir);
-            String filename = "event_" + eventId + "_user_" + userId + ".pdf";
-            Path filePath = uploadsDir.resolve(filename);
-            Files.write(filePath, pdf, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            byte[] pdfBytes = generateCertificatePdf(eventId, userId);
+            String fileName = "event_" + eventId + "_user_" + userId + ".pdf";
 
-            Certificate newCertificate = new Certificate();
-            newCertificate.setEventId(eventId);
-            newCertificate.setUserId(userId);
-            newCertificate.setFilePath(filePath.toString());
-            newCertificate.setIssuedAt(LocalDateTime.now());
+            // Upload the generated PDF bytes to S3
+            String fileUrl = s3StorageService.uploadPdf(pdfBytes, fileName);
 
-            return certificateRepository.save(newCertificate);
+            Certificate certificate = new Certificate();
+            certificate.setEventId(eventId);
+            certificate.setUserId(userId);
+            certificate.setFilePath(fileUrl); // Save the S3 URL
+            certificate.setIssuedAt(LocalDateTime.now());
+
+            return certificateRepository.save(certificate);
 
         } catch (Exception e) {
-            log.error("Error in findOrCreateCertificate for user {} and event {}: {}", userId, eventId, e.getMessage());
-            throw new RuntimeException("Failed to generate and save certificate.", e);
+            log.error("Error in findOrCreateCertificate: {}", e.getMessage());
+            throw new RuntimeException(e);
         }
     }
+
+    // ADD THIS NEW METHOD for the scheduler
+    public void generateAndNotifyParticipant(Long eventId, Long userId) {
+        // This safety check prevents sending the same certificate email twice
+        if (certificateRepository.existsByEventIdAndUserId(eventId, userId)) {
+            log.warn("Certificate for user {} and event {} already exists. Skipping email notification.", userId, eventId);
+            return;
+        }
+
+        // If it doesn't exist, call the original method to create, upload, and send the notification.
+        log.info("Generating and sending new certificate for user {} and event {}.", userId, eventId);
+        generateSaveAndSend(eventId, userId);
+    }
+
+
+    /**
+     * Helper method that finds a certificate. If the DB record points to an old local file
+     * or doesn't exist, it generates/regenerates the PDF, uploads it to S3, and saves the record.
+     */
+    private Certificate findOrCreateAndUploadCertificate(Long eventId, Long userId, byte[] preGeneratedPdfBytes) {
+        Optional<Certificate> existingCertOpt = certificateRepository.findByEventIdAndUserId(eventId, userId);
+
+        // If a record exists but has an old local path, we must treat it as non-existent and re-upload.
+        if (existingCertOpt.isPresent() && existingCertOpt.get().getFilePath().startsWith("https://")) {
+            log.info("Found existing, valid S3 certificate for user {} and event {}.", userId, eventId);
+            return existingCertOpt.get();
+        }
+
+        log.info("No valid S3 certificate found. Generating/uploading new one for user {} and event {}.", userId, eventId);
+        try {
+            // Use pre-generated bytes if available (from generateSaveAndSend), otherwise generate new ones.
+            byte[] pdfBytes = (preGeneratedPdfBytes != null) ? preGeneratedPdfBytes : generateCertificatePdf(eventId, userId);
+
+            String fileName = "event_" + eventId + "_user_" + userId + ".pdf";
+            String fileUrl = s3StorageService.uploadPdf(pdfBytes, fileName);
+
+            // Use existing record if it's stale, otherwise create a new one.
+            Certificate certificate = existingCertOpt.orElse(new Certificate());
+            certificate.setEventId(eventId);
+            certificate.setUserId(userId);
+            certificate.setFilePath(fileUrl); // Save/Update to the S3 URL
+            certificate.setIssuedAt(LocalDateTime.now());
+
+            return certificateRepository.save(certificate);
+
+        } catch (Exception e) {
+            log.error("Error in findOrCreateAndUploadCertificate: {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
 }

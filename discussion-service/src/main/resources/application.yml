@@ -40,6 +40,15 @@ CLUB_SERVICE_URL: http://localhost:8082
 EVENT_SERVICE_URL: http://localhost:8083
 NOTIFICATION_SERVICE_URL: http://localhost:8085
 
-file:
-  upload:
-    dir: ./uploads/
+#file:
+#  upload:
+#    dir: ./uploads/
+
+# ===== ADD THIS AWS CONFIGURATION SECTION =====
+aws:
+  region: ap-south-1 # The region you created your bucket in
+  s3:
+    bucket-name: connectedu-media # Your S3 bucket name
+  credentials:
+    access-key: AKIAYQYUBDK4RVKIGINE # Your AWS Access Key
+    secret-key: ZrcjKG0eg8KDNMveZ3ngChfT2Yqh6IrKSmpOH4hQ # Your AWS Secret Key

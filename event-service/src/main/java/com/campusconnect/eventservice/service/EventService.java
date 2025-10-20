@@ -253,4 +253,13 @@ public class EventService {
         Event updatedEvent = eventRepository.save(event);
         return mapToEventResponseDto(updatedEvent);
     }
+    // ADD THIS NEW METHOD: Business logic to find events by date.
+    public List<EventResponseDto> findEventsByDate(LocalDate date) {
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.atTime(23, 59, 59);
+        return eventRepository.findByDateBetween(startOfDay, endOfDay).stream()
+                .map(this::mapToEventResponseDto)
+                .collect(Collectors.toList());
+    }
+
 }
