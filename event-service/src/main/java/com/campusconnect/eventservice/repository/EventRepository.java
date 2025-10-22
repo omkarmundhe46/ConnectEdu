@@ -22,4 +22,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     // ADD THIS METHOD: Finds events between the start and end of a given day.
     List<Event> findByDateBetween(LocalDateTime start, LocalDateTime end);
 
+    // ADD THIS METHOD
+    List<Event> findByDateAfterOrderByDateAsc(LocalDateTime date);
 }

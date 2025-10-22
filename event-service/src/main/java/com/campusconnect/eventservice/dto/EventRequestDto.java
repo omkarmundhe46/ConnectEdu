@@ -22,5 +22,7 @@ public class EventRequestDto {
     @NotBlank(message = "Location is required")
     private String location;
 
+    private String imageUrl; // Add imageUrl field (can be optional)
+
     private String meetingLink;
 }

@@ -51,6 +51,7 @@ public class JwtService {
         if (userDetails instanceof User) {
             User user = (User) userDetails;
             extraClaims.put("userId", user.getId());
+            extraClaims.put("name", user.getName());
             if (user.getManagedClubId() != null) {
                 extraClaims.put("managedClubId", user.getManagedClubId());
             }

@@ -44,4 +44,11 @@ public class InternalController {
         EventResponseDto event = eventService.getEventById(eventId);
         return eventService.getEventParticipants(event.getClubId(), eventId);
     }
+
+    // ADD THIS METHOD
+    @GetMapping("/upcoming")
+    public ResponseEntity<List<EventResponseDto>> getAllUpcomingEvents() {
+        List<EventResponseDto> events = eventService.getAllUpcomingEvents();
+        return ResponseEntity.ok(events);
+    }
 }

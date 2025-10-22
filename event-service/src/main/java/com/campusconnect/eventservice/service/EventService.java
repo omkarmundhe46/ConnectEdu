@@ -53,6 +53,8 @@ public class EventService {
         event.setDate(eventRequestDto.getDate());
         event.setLocation(eventRequestDto.getLocation());
         event.setClubId(clubId);
+        event.setImageUrl(eventRequestDto.getImageUrl()); // Set the image URL
+        event.setMeetingLink(eventRequestDto.getMeetingLink()); // Set meeting link too
 
         Event savedEvent = eventRepository.save(event);
         return mapToEventResponseDto(savedEvent);
@@ -81,6 +83,8 @@ public class EventService {
         event.setDescription(eventRequestDto.getDescription());
         event.setDate(eventRequestDto.getDate());
         event.setLocation(eventRequestDto.getLocation());
+        event.setImageUrl(eventRequestDto.getImageUrl()); // Update the image URL
+        event.setMeetingLink(eventRequestDto.getMeetingLink()); // Update meeting link
         event.setUpdatedAt(LocalDateTime.now());
 
         Event updatedEvent = eventRepository.save(event);
@@ -205,6 +209,7 @@ public class EventService {
         dto.setCreatedAt(event.getCreatedAt());
         dto.setUpdatedAt(event.getUpdatedAt());
         dto.setMeetingLink(event.getMeetingLink());
+        dto.setImageUrl(event.getImageUrl()); // Map the image URL
         return dto;
     }
 
@@ -258,6 +263,14 @@ public class EventService {
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(23, 59, 59);
         return eventRepository.findByDateBetween(startOfDay, endOfDay).stream()
+                .map(this::mapToEventResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    // ADD THIS METHOD
+    public List<EventResponseDto> getAllUpcomingEvents() {
+        return eventRepository.findByDateAfterOrderByDateAsc(LocalDateTime.now())
+                .stream()
                 .map(this::mapToEventResponseDto)
                 .collect(Collectors.toList());
     }

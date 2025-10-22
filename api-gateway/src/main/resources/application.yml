@@ -73,7 +73,7 @@ spring:
         - id: event-service
           uri: lb://event-service
           predicates:
-            - Path=/api/clubs/{clubId}/events/**, /internal/api/events/**
+            - Path=/api/clubs/{clubId}/events/**, /internal/api/events/**, /api/events/upcoming
 
         # 2. General route for Club Service (comes after the more specific one)
         # This route will now only handle requests for clubs themselves.

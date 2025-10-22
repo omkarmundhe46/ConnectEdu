@@ -34,6 +34,9 @@ public class Event {
     @Column(nullable = false)
     private String location;
 
+    @Column(name = "image_url") // New column for the banner image URL
+    private String imageUrl;
+
     @Column(name = "club_id", nullable = false)
     private Long clubId;
 
