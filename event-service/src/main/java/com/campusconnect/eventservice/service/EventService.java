@@ -210,6 +210,12 @@ public class EventService {
         dto.setUpdatedAt(event.getUpdatedAt());
         dto.setMeetingLink(event.getMeetingLink());
         dto.setImageUrl(event.getImageUrl()); // Map the image URL
+        // Calculate the status based on the event date
+        if (event.getDate() != null && event.getDate().isAfter(LocalDateTime.now())) {
+            dto.setStatus("UPCOMING");
+        } else {
+            dto.setStatus("COMPLETED");
+        }
         return dto;
     }
 

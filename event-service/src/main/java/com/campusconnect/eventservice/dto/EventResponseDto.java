@@ -16,4 +16,6 @@ public class EventResponseDto {
     private LocalDateTime updatedAt;
     private String meetingLink;
     private String imageUrl; // Add imageUrl field (can be optional)
+    private String status; // e.g., "UPCOMING", "COMPLETED"
+
 }
