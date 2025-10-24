@@ -6,9 +6,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer; // Import this
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher; // Import this
 
 @Configuration
 @EnableWebSecurity
@@ -21,13 +23,17 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // ---- THIS IS THE FIX ----
-                // Disable CSRF protection for your stateless REST API.
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable) // Use standard disable method
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll() // Allow access to login/register
-                        .requestMatchers("/internal/**").permitAll() // ADD THIS LINE to allow internal calls
-                        .anyRequest().authenticated() // Secure all other endpoints
+                        // --- THIS IS THE FIX ---
+                        // Explicitly permit all requests to internal and auth paths.
+                        // This tells the filter chain to not even run security on them.
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/auth/**"),
+                                new AntPathRequestMatcher("/internal/api/users/**")
+                        ).permitAll()
+                        // Secure all other requests
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)

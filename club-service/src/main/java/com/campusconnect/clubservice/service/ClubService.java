@@ -1,9 +1,6 @@
 package com.campusconnect.clubservice.service;
 
-import com.campusconnect.clubservice.dto.ClubRequestDto;
-import com.campusconnect.clubservice.dto.ClubResponseDto;
-import com.campusconnect.clubservice.dto.ClubMemberRequestDto;
-import com.campusconnect.clubservice.dto.ClubMemberResponseDto;
+import com.campusconnect.clubservice.dto.*;
 import com.campusconnect.clubservice.entity.Club;
 import com.campusconnect.clubservice.entity.ClubMember;
 import com.campusconnect.clubservice.exception.ClubNameAlreadyExistsException;
@@ -18,7 +15,6 @@ import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 // ... other imports
-import com.campusconnect.clubservice.dto.UpdateUserRoleRequest;
 import com.campusconnect.clubservice.entity.Role; // Assuming you have a Role enum here too
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,14 +31,21 @@ public class ClubService {
         if (clubRepository.existsByName(clubRequestDto.getName())) {
             throw new ClubNameAlreadyExistsException("Club name already exists: " + clubRequestDto.getName());
         }
-        
+
+        UserDto adminUser;
+        try {
+            adminUser = userClient.getUserByEmail(clubRequestDto.getAdminEmail());
+        } catch (FeignException.NotFound e) {
+            throw new UserNotFoundException("User with email not found: " + clubRequestDto.getAdminEmail());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to verify admin user: " + e.getMessage());
+        }
+
         Club club = new Club();
         club.setName(clubRequestDto.getName());
         club.setDescription(clubRequestDto.getDescription());
-
-        // --- THIS IS THE FIX ---
-        // We must set the adminId from the request DTO onto the entity before saving.
-        club.setAdminId(clubRequestDto.getAdminId());
+        club.setAdminId(adminUser.getId()); // Use the ID found via email
+        club.setLogoUrl(clubRequestDto.getLogoUrl()); // Set logo URL
 
         Club savedClub = clubRepository.save(club);
 
@@ -72,14 +75,32 @@ public class ClubService {
     public ClubResponseDto updateClub(Long id, ClubRequestDto clubRequestDto) {
         Club club = clubRepository.findById(id)
                 .orElseThrow(() -> new ClubNotFoundException("Club not found with id: " + id));
-        
-        if (!club.getName().equals(clubRequestDto.getName()) && 
-            clubRepository.existsByName(clubRequestDto.getName())) {
-            throw new ClubNameAlreadyExistsException("Club name already exists: " + clubRequestDto.getName());
+
+        // --- CHANGE: Find user by email (if email is provided for update) ---
+        Long adminIdToSet = club.getAdminId(); // Keep existing admin by default
+        if (clubRequestDto.getAdminEmail() != null && !clubRequestDto.getAdminEmail().isEmpty()) {
+            try {
+                UserDto adminUser = userClient.getUserByEmail(clubRequestDto.getAdminEmail());
+                adminIdToSet = adminUser.getId();
+
+                // Promote the NEW admin if they are different
+                if (!adminIdToSet.equals(club.getAdminId())) {
+                    UpdateUserRoleRequest roleRequest = new UpdateUserRoleRequest(Role.CLUB_ADMIN, id);
+                    userClient.updateUserRole(adminIdToSet, roleRequest);
+                    // Consider demoting the old admin if needed? (More complex logic)
+                }
+
+            } catch (FeignException.NotFound e) {
+                throw new UserNotFoundException("User with email not found: " + clubRequestDto.getAdminEmail());
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to verify admin user: " + e.getMessage());
+            }
         }
         
         club.setName(clubRequestDto.getName());
         club.setDescription(clubRequestDto.getDescription());
+        club.setAdminId(adminIdToSet); // Set potentially updated adminId
+        club.setLogoUrl(clubRequestDto.getLogoUrl()); // Update logo URL
         
         Club updatedClub = clubRepository.save(club);
         return mapToResponseDto(updatedClub);
@@ -152,14 +173,15 @@ public class ClubService {
 
     // Update the mapping method to include adminId
     private ClubResponseDto mapToResponseDto(Club club) {
-        ClubResponseDto dto = new ClubResponseDto();
-        dto.setId(club.getId());
-        dto.setName(club.getName());
-        dto.setDescription(club.getDescription());
-        dto.setAdminId(club.getAdminId()); // Map the adminId
-        dto.setCreatedAt(club.getCreatedAt());
-        dto.setUpdatedAt(club.getUpdatedAt());
-        return dto;
+        return ClubResponseDto.builder()
+                .id(club.getId())
+                .name(club.getName())
+                .description(club.getDescription())
+                .adminId(club.getAdminId())
+                .logoUrl(club.getLogoUrl()) // Map logo URL
+                .createdAt(club.getCreatedAt())
+                .updatedAt(club.getUpdatedAt())
+                .build();
     }
 
     private ClubMemberResponseDto mapToMemberResponseDto(ClubMember member) {

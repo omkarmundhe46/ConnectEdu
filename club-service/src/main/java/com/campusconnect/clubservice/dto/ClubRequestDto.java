@@ -1,7 +1,7 @@
 package com.campusconnect.clubservice.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
@@ -12,7 +12,10 @@ public class ClubRequestDto {
     @NotBlank(message = "Description is required")
     private String description;
 
-    // --- ADD THIS FIELD ---
-    @NotNull(message = "Admin ID is required")
-    private Long adminId;
+    // --- THIS IS THE FIX ---
+    // Remove @NotBlank. @Email already checks for a valid format if the string is not empty.
+    @Email(message = "If provided, admin email must be a valid format")
+    private String adminEmail;
+
+    private String logoUrl;
 }

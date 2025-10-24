@@ -6,6 +6,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     @Override
     protected void doFilterInternal(
@@ -40,6 +43,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwtString = authHeader.substring(7);
         Claims claims = jwtService.extractAllClaims(jwtString);
         String userEmail = claims.getSubject();
+        log.info("JWT Filter: Processing token for user: {}", userEmail);
+        log.debug("JWT Filter: Raw claims received: {}", claims);
 
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
@@ -50,6 +55,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             List<SimpleGrantedAuthority> authorities = roles != null ? roles.stream()
                     .map(SimpleGrantedAuthority::new) // Directly use the role string from the token
                     .collect(Collectors.toList()) : Collections.emptyList();
+
+            log.info("JWT Filter: Extracted roles from token: {}", roles);
+            log.info("JWT Filter: Converted authorities for Spring Security: {}", authorities);
 
             Jwt.Builder jwtBuilder = Jwt.withTokenValue(jwtString)
                     .header("alg", "HS256")

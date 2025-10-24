@@ -16,6 +16,7 @@ public class ClubResponseDto {
     private String name;
     private String description;
     private Long adminId;
+    private String logoUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
    

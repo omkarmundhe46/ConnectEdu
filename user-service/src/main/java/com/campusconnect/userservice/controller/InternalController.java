@@ -1,6 +1,7 @@
 package com.campusconnect.userservice.controller;
 
 import com.campusconnect.userservice.dto.UserResponseDto;
+import com.campusconnect.userservice.exception.UserNotFoundException;
 import com.campusconnect.userservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,5 +28,16 @@ public class InternalController {
     public ResponseEntity<List<UserResponseDto>> getUsersByIds(@RequestBody List<Long> userIds) {
         List<UserResponseDto> users = userService.getUsersByIds(userIds);
         return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/by-email/{email}")
+    public ResponseEntity<UserResponseDto> getUserByEmailInternal(@PathVariable String email) {
+        try {
+            UserResponseDto user = userService.getUserByEmail(email);
+            return ResponseEntity.ok(user);
+        } catch (UserNotFoundException e) {
+            // Return 404 if user not found by email
+            return ResponseEntity.notFound().build();
+        }
     }
 }

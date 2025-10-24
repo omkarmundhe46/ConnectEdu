@@ -59,6 +59,12 @@ spring:
           predicates:
             - Path=/auth/**, /api/users/**, /internal/api/users/**
 
+
+        - id: upload-service # Give it a unique ID
+          uri: lb://discussion-service # Target the discussion-service
+          predicates:
+              - Path=/api/uploads/**
+
         # --- START OF FIX ---
         # 1. MOST SPECIFIC: The Discussion Service route must come first.
         # It matches URLs containing /discussions/
