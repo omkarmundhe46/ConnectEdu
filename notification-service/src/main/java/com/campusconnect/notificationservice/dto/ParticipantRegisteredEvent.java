@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// This is the new message sent to the notification-service
 @Data
 @Builder
 @NoArgsConstructor

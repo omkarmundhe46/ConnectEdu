@@ -29,9 +29,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 public class ClubController {
 
 	private final ClubService clubService;
-	private final ClubKafkaProducer clubKafkaProducer; // ADD THIS
-//	private final NotificationClient notificationClient;
-	private final UserClient userClient; // Inject the UserClient
+	private final ClubKafkaProducer clubKafkaProducer;
+	private final UserClient userClient;
 
 	@PostMapping
 	@PreAuthorize("hasAuthority('ROLE_COLLEGE_ADMIN')") // Only College Admin can create
@@ -71,34 +70,6 @@ public class ClubController {
 		clubService.deleteClub(id);
 		return ResponseEntity.noContent().build();
 	}
-//	@PostMapping("/{clubId}/members")
-//	public ResponseEntity<ClubMemberResponseDto> addMemberToClub(
-//	        @PathVariable Long clubId,
-//	        @Valid @RequestBody ClubMemberRequestDto memberRequestDto) {
-//
-//	    ClubMemberResponseDto member = clubService.addMemberToClub(clubId, memberRequestDto);
-//
-//	    try {
-//	        ClubResponseDto club = clubService.getClubById(clubId);
-//
-//	        ClubMemberAddedRequest req = ClubMemberAddedRequest.builder()
-//	                .userId(member.getUserId())
-//	                .clubId(clubId)
-//	                .role(member.getRole().name())  // ✅ enum → String
-//	                .requestId("club-member-" + member.getUserId() + "-" + clubId)
-//	                .variables(Map.of(
-//	                        "clubName", club.getName(),
-//	                        "role", member.getRole().name()
-//	                ))
-//	                .build();
-//
-//	        notificationClient.notifyClubMemberAdded(req);
-//	    } catch (Exception e) {
-//	        log.error("❌ Failed to send club member notification", e);
-//	    }
-//
-//	    return new ResponseEntity<>(member, HttpStatus.CREATED);
-//	}
 
 	@PostMapping("/{clubId}/members")
 	@PreAuthorize("hasAuthority('ROLE_CLUB_ADMIN')")
@@ -110,7 +81,6 @@ public class ClubController {
 		ClubMemberResponseDto member = clubService.addMemberToClub(clubId, memberRequestDto);
 
 		try {
-			// --- THIS IS THE FIX ---
 			// 1. Fetch the user's details using the authenticated Feign client.
 			UserDto user = userClient.getUserById(member.getUserId());
 
@@ -143,7 +113,6 @@ public class ClubController {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		Jwt jwt = (Jwt) authentication.getPrincipal();
 
-		// --- THE DEFINITIVE FIX ---
 		// 1. Get the claim as a generic Object.
 		Object managedClubIdObj = jwt.getClaim("managedClubId");
 
@@ -165,9 +134,6 @@ public class ClubController {
 				.anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_CLUB_ADMIN"));
 	}
 
-
-
-
 	@GetMapping("/{clubId}/members")
 	@PreAuthorize("hasAnyAuthority('ROLE_COLLEGE_ADMIN', 'ROLE_CLUB_ADMIN')") // College Admin or Club Admin
 	public ResponseEntity<List<ClubMemberResponseDto>> getClubMembers(@PathVariable Long clubId) {
@@ -178,8 +144,6 @@ public class ClubController {
 		List<ClubMemberResponseDto> members = clubService.getClubMembers(clubId);
 		return ResponseEntity.ok(members);
 	}
-
-// ---
 
 	@DeleteMapping("/{clubId}/members/{userId}")
 	@PreAuthorize("hasAnyAuthority('ROLE_COLLEGE_ADMIN', 'ROLE_CLUB_ADMIN')") // College Admin or Club Admin
@@ -192,16 +156,12 @@ public class ClubController {
 		return ResponseEntity.noContent().build();
 	}
 
-// ---
-
 	@GetMapping("/{clubId}/members/{userId}/check")
 	@PreAuthorize("isAuthenticated()") // Any authenticated user can check membership
 	public ResponseEntity<Boolean> checkMembership(@PathVariable Long clubId, @PathVariable Long userId) {
 		boolean isMember = clubService.isMember(clubId, userId);
 		return ResponseEntity.ok(isMember);
 	}
-
-// ---
 
 	@GetMapping("/{clubId}/members/{userId}/role")
 	@PreAuthorize("hasAnyAuthority('ROLE_COLLEGE_ADMIN', 'ROLE_CLUB_ADMIN')") // College Admin or Club Admin

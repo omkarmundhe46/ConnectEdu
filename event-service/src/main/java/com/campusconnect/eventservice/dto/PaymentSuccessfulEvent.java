@@ -2,7 +2,6 @@ package com.campusconnect.eventservice.dto;
 
 import lombok.Data;
 
-// This DTO must exactly match the Kafka message sent by the payment-service.
 @Data
 public class PaymentSuccessfulEvent {
     private String paymentId;

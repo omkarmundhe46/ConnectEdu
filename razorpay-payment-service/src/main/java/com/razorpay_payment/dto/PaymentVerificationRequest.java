@@ -6,6 +6,5 @@ public class PaymentVerificationRequest {
     private String razorpayOrderId;
     private String razorpayPaymentId;
     private String razorpaySignature;
-    // We pass the original registration data through for the Kafka message
     private RegistrationData registrationData;
 }

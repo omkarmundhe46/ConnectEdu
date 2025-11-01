@@ -40,8 +40,6 @@ public class PaymentConsumer {
         participantRepository.save(participant);
         log.info("✅ Successfully registered participant {} for event {}.", participant.getUserId(), participant.getEventId());
 
-        // Optional: Send another Kafka message to notification-service to send a "Registration Confirmed" email.
-        // --- THIS IS THE NEW PART ---
         // After saving, send a message to the notification-service.
         ParticipantRegisteredEvent notificationEvent = ParticipantRegisteredEvent.builder()
                 .userId(participant.getUserId())

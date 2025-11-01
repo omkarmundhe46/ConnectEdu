@@ -7,7 +7,6 @@ public class ClubMemberAddedRequest {
     private Long userId;
     private Long clubId;
     private String role;
-    // --- ADD THESE MISSING FIELDS ---
     private String userName;
     private String userEmail;
 

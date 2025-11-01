@@ -29,7 +29,6 @@ public class EventParticipant {
     @Column(name = "registered_at", updatable = false)
     private LocalDateTime registeredAt;
 
-    // --- ADD NEW FIELDS ---
     @Column(nullable = false)
     private String college;
 

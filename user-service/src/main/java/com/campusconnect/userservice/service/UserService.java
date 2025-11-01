@@ -24,22 +24,6 @@ public class UserService {
     private final PasswordEncoder passwordEncoder; // ADDED
     Logger log = org.slf4j.LoggerFactory.getLogger(UserService.class);
 
-//    public UserResponseDto createUser(UserRequestDto userRequestDto) {
-//        if (userRepository.existsByEmail(userRequestDto.getEmail())) {
-//            throw new EmailAlreadyExistsException("Email already exists: " + userRequestDto.getEmail());
-//        }
-//
-//        User user = new User();
-//        user.setName(userRequestDto.getName());
-//        user.setEmail(userRequestDto.getEmail());
-//        user.setPassword(userRequestDto.getPassword());
-//        user.setDepartment(userRequestDto.getDepartment());
-//
-//        User savedUser = userRepository.save(user);
-//        return mapToResponseDto(savedUser);
-//    }
-
-
     // This method is now handled by AuthenticationService, but we keep the core logic
     // for other parts of the app. It's important to encode the password here as well.
     public UserResponseDto createUser(UserRequestDto userRequestDto) {

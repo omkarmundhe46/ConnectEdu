@@ -19,12 +19,9 @@ public class ClubMemberAddedRequest implements Serializable {
     private Long clubId;
     private String role;
 
-    // ADD THESE FIELDS
     private String userName;
     private String userEmail;
 
     private String clubName;
 
-//    private String requestId;   // unique request id for idempotency
-//    private Map<String, Object> variables; // dynamic variables like clubName, role etc.
 }

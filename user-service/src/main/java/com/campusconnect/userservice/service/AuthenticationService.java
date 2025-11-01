@@ -41,7 +41,6 @@ public class AuthenticationService {
                 .build();
         User savedUser = userRepository.save(user);
 
-        // --- THIS IS THE FIX ---
         // Create the notification request AND populate all the necessary fields.
         UserRegisteredRequest notificationRequest = new UserRegisteredRequest();
         notificationRequest.setUserId(savedUser.getId());

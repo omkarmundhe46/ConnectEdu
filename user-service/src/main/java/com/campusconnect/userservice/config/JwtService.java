@@ -37,7 +37,7 @@ public class JwtService {
     }
 
     public String generateToken(UserDetails userDetails) {
-        // --- THIS IS THE FIX ---
+
         // We create a map of extra claims to include in the token.
         Map<String, Object> extraClaims = new HashMap<>();
 

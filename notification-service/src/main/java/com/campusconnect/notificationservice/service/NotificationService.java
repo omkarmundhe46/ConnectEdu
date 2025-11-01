@@ -52,9 +52,6 @@ public class NotificationService {
 		}
 
 		try {
-			// --- THIS IS THE FIX ---
-			// We no longer call userClient.getUser(). We use the data from the request directly.
-			// UserDto user = userClient.getUser(request.getUserId()); // REMOVE THIS LINE
 
 			Map<String, Object> variables = new HashMap<>();
 			variables.put("name", request.getName());   // Use name from the request
@@ -180,7 +177,7 @@ public class NotificationService {
 
 			NotificationLog savedLog = logRepository.save(logEntry);
 
-			// Send email async
+
 			emailSenderService.sendEmailAsync(savedLog);
 			log.info("✅ Participation email sent to {}", user.getEmail());
 
@@ -216,14 +213,7 @@ public class NotificationService {
 		}
 
 		try {
-			// --- THIS IS THE FIX ---
-			// We no longer call userClient.getUser(). We use details from the request.
-			// UserDto user = userClient.getUser(request.getUserId()); // REMOVE THIS
 
-			// We still need the club name, so this Feign call is necessary.
-//			ClubResponseDto club = clubClient.getClubById(request.getClubId());
-
-			// Use the clubName directly from the enriched request object.
 			String subject = "🎉 Welcome to " + request.getClubName();
 			String body = "<h2>Hello " + request.getUserName() + ",</h2>"
 					+ "<p>Congratulations! You are now a member of <b>" + request.getClubName() + "</b>.</p>"
@@ -232,13 +222,12 @@ public class NotificationService {
 
 			NotificationLog logEntry = new NotificationLog();
 			logEntry.setUserId(request.getUserId());
-			// Use the userEmail from the request object
+
 			logEntry.setToEmail(request.getUserEmail());
 			logEntry.setSubject(subject);
 			logEntry.setBody(body);
 			NotificationLog savedLog = logRepository.save(logEntry);
 
-			// Send email async
 			emailSenderService.sendEmailAsync(savedLog);
 
 			// Save request

@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// This is the message that will be sent to Kafka
 @Data
 @Builder
 @AllArgsConstructor

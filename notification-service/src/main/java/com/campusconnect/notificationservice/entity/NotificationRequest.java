@@ -67,10 +67,10 @@ public class NotificationRequest {
     @Column(name = "processed_count")
     private int processedCount;
 
-    @Column(name = "user_id")   // ✅ needed for participation, user-registered etc.
+    @Column(name = "user_id")
     private Long userId;
 
-    @Column(name = "event_id")  // ✅ needed for event participation
+    @Column(name = "event_id")
     private Long eventId;
 
     @Column(name = "created_at")

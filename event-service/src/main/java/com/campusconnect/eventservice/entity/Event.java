@@ -44,7 +44,6 @@ public class Event {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    // ADD THIS FIELD
     @Column(name = "meeting_link")
     private String meetingLink;
     
@@ -58,6 +57,18 @@ public class Event {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "contact_name_1")
+    private String contactName1;
+
+    @Column(name = "contact_phone_1")
+    private String contactPhone1;
+
+    @Column(name = "contact_name_2")
+    private String contactName2;
+
+    @Column(name = "contact_phone_2")
+    private String contactPhone2;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<EventParticipant> participants;

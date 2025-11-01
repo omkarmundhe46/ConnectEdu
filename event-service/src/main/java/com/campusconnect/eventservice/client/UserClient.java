@@ -9,14 +9,12 @@ import org.springframework.web.bind.annotation.RequestBody; // Import
 
 import java.util.List; // Import
 
-// Point the client to the unsecured internal endpoint
 @FeignClient(name = "user-service", url = "${USER_SERVICE_URL:http://localhost:8081}/internal/api/users")
 public interface UserClient {
 
-    @GetMapping("/{id}") // Path is now relative
+    @GetMapping("/{id}")
     UserDto getUserById(@PathVariable("id") Long id);
 
-    // --- ADD THIS NEW METHOD ---
     @PostMapping("/batch")
     List<UserDto> getUsersByIds(@RequestBody List<Long> userIds);
 }

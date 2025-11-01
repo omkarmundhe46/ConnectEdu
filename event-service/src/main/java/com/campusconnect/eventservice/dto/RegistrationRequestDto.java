@@ -7,5 +7,5 @@ public class RegistrationRequestDto {
     private String college;
     private String mobileNumber;
     private String address;
-    private Integer amount; // The event fee in paisa
+    private Integer amount;
 }

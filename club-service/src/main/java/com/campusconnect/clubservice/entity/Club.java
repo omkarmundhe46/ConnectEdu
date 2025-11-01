@@ -46,6 +46,4 @@ public class Club {
     @Column(name = "logo_url")
     private String logoUrl;
 
-//    @OneToMany(mappedBy = "clubId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//    private List<Event> events;
 }

@@ -12,8 +12,6 @@ public class ClubRequestDto {
     @NotBlank(message = "Description is required")
     private String description;
 
-    // --- THIS IS THE FIX ---
-    // Remove @NotBlank. @Email already checks for a valid format if the string is not empty.
     @Email(message = "If provided, admin email must be a valid format")
     private String adminEmail;
 

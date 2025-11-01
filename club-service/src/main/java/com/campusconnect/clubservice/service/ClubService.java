@@ -117,27 +117,27 @@ public class ClubService {
         if (!clubRepository.existsById(clubId)) {
             throw new ClubNotFoundException("Club not found with id: " + clubId);
         }
-        
-        // Validate user exists
+        // 1. Validate user exists by email
+        UserDto user;
         try {
-            userClient.getUserById(memberRequestDto.getUserId());
+            user = userClient.getUserByEmail(memberRequestDto.getUserEmail());
         } catch (FeignException.NotFound e) {
-            throw new UserNotFoundException("User not found with id: " + memberRequestDto.getUserId());
+            throw new UserNotFoundException("User not found with email: " + memberRequestDto.getUserEmail());
         }
-        
-        if (clubMemberRepository.existsByClubIdAndUserId(clubId, memberRequestDto.getUserId())) {
+
+        // 2. Use the found user's ID for checks and saving
+        if (clubMemberRepository.existsByClubIdAndUserId(clubId, user.getId())) {
             throw new DuplicateMembershipException("User already member of this club");
         }
-        
+
         ClubMember member = new ClubMember();
         member.setClubId(clubId);
-        member.setUserId(memberRequestDto.getUserId());
+        member.setUserId(user.getId());
         member.setRole(memberRequestDto.getRole());
-        
+
         ClubMember savedMember = clubMemberRepository.save(member);
 
         // --- AUTOMATIC ROLE PROMOTION ---
-        // After adding the member, tell the user-service to promote them.
         UpdateUserRoleRequest roleRequest = new UpdateUserRoleRequest(Role.CLUB_MEMBER, null);
         userClient.updateUserRole(savedMember.getUserId(), roleRequest);
 

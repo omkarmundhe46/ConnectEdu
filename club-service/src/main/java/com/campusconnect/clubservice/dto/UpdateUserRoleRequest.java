@@ -12,5 +12,5 @@ import lombok.NoArgsConstructor;
 public class UpdateUserRoleRequest {
     @NotNull
     private Role newRole;
-    private Long managedClubId; // Optional: Only used when promoting to CLUB_ADMIN
+    private Long managedClubId;
 }

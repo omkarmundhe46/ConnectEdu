@@ -25,19 +25,16 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // Permit all requests to internal paths
+
                         .requestMatchers(
                                 new AntPathRequestMatcher("/internal/api/discussions/**")
                         ).permitAll()
 
-                        // Explicitly define user-facing paths.
-                        // By not adding .permitAll(), these are secured by default.
                         .requestMatchers(
                                 new AntPathRequestMatcher("/api/uploads/**"),
                                 new AntPathRequestMatcher("/api/clubs/**")
                         ).authenticated()
 
-                        // Secure all other remaining requests
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

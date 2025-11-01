@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ClubResponseDto {
-    private Long id;          // Club Id
-    private String name;      // Club Name
+    private Long id;
+    private String name;
     private String description;
 }

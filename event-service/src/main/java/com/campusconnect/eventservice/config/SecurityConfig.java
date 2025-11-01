@@ -25,8 +25,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // --- THIS IS THE FIX ---
-                        // Explicitly permit all requests to internal paths
+
                         .requestMatchers(
                                 new AntPathRequestMatcher("/internal/api/events/**")
                         ).permitAll()

@@ -7,8 +7,8 @@ import lombok.Data;
 public class UserRegisteredRequest {
     @NotNull(message = "User ID is required")
     private Long userId;
-    private String name;  // ADD THIS
-    private String email; // ADD THIS
+    private String name;
+    private String email;
     
     private String requestId;
 }

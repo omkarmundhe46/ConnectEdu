@@ -1,7 +1,6 @@
 package com.razorpay_payment.dto;
 
 import lombok.Data;
-// This DTO holds the user's form submission data
 @Data
 public class RegistrationData {
     private Long userId;

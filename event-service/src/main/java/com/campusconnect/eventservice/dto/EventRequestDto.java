@@ -25,5 +25,9 @@ public class EventRequestDto {
     private String imageUrl; // Add imageUrl field (can be optional)
 
     private String meetingLink;
+    private String contactName1;
+    private String contactPhone1;
+    private String contactName2;
+    private String contactPhone2;
 
 }

@@ -34,10 +34,6 @@ public class NotificationLog {
     @Column(columnDefinition = "TEXT")
     private String body;
 
-//    @Enumerated(EnumType.STRING)
-//    @Column(nullable = false)
-//    private NotificationStatus status;
-
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
@@ -48,8 +44,5 @@ public class NotificationLog {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-//
-//    public enum NotificationStatus {
-//        PENDING, SENT, FAILED
-//    }
+
 }

@@ -25,7 +25,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable) // Use standard disable method
                 .authorizeHttpRequests(auth -> auth
-                        // --- THIS IS THE FIX ---
+
                         // Explicitly permit all requests to internal and auth paths.
                         // This tells the filter chain to not even run security on them.
                         .requestMatchers(

@@ -55,13 +55,14 @@ public class EventService {
         event.setClubId(clubId);
         event.setImageUrl(eventRequestDto.getImageUrl()); // Set the image URL
         event.setMeetingLink(eventRequestDto.getMeetingLink()); // Set meeting link too
+        event.setContactName1(eventRequestDto.getContactName1());
+        event.setContactPhone1(eventRequestDto.getContactPhone1());
+        event.setContactName2(eventRequestDto.getContactName2());
+        event.setContactPhone2(eventRequestDto.getContactPhone2());
 
         Event savedEvent = eventRepository.save(event);
         return mapToEventResponseDto(savedEvent);
     }
-
-    // The confusing gatherAndSendEventCreatedNotification method has been removed.
-    // All other methods below are correct and do not need any changes.
 
     public List<EventResponseDto> getClubEvents(Long clubId) {
         return eventRepository.findByClubId(clubId).stream()
@@ -86,6 +87,10 @@ public class EventService {
         event.setImageUrl(eventRequestDto.getImageUrl()); // Update the image URL
         event.setMeetingLink(eventRequestDto.getMeetingLink()); // Update meeting link
         event.setUpdatedAt(LocalDateTime.now());
+        event.setContactName1(eventRequestDto.getContactName1());
+        event.setContactPhone1(eventRequestDto.getContactPhone1());
+        event.setContactName2(eventRequestDto.getContactName2());
+        event.setContactPhone2(eventRequestDto.getContactPhone2());
 
         Event updatedEvent = eventRepository.save(event);
         return mapToEventResponseDto(updatedEvent);
@@ -97,61 +102,6 @@ public class EventService {
         eventRepository.delete(event);
     }
 
-//    public ParticipantResponseDto addParticipantToEvent(Long clubId, Long eventId, EventParticipationDTO participantRequestDto) {
-//        // Step 1: Get the authenticated user's details from the JWT
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//        Jwt jwt = (Jwt) authentication.getPrincipal();
-//        // --- THIS IS THE FIX ---
-//        // Safely get the userId claim and convert it from Integer to Long.
-//        Object userIdObj = jwt.getClaim("userId");
-//        Long authenticatedUserId = null;
-//        if (userIdObj instanceof Number) {
-//            authenticatedUserId = ((Number) userIdObj).longValue();
-//        }
-//        // --- END OF FIX ---
-//
-//        String userRole = jwt.getClaimAsStringList("roles").get(0);
-//
-//        // This check will now work correctly without a NullPointerException
-//        if (authenticatedUserId == null || !authenticatedUserId.equals(participantRequestDto.getUserId())) {
-//            throw new AccessDeniedException("You can only register yourself for an event.");
-//        }
-//
-//        // Step 2: Check the business rule for Club Members
-//        if ("ROLE_CLUB_MEMBER".equals(userRole)) {
-//            log.info("User is a CLUB_MEMBER. Checking if they belong to this club...");
-//            // Make an authenticated call to club-service
-//            boolean isMemberOfThisClub = clubClient.isMember(clubId, authenticatedUserId);
-//
-//            if (isMemberOfThisClub) {
-//                log.warn("Participation denied for user {} in their own club's event (clubId: {})", authenticatedUserId, clubId);
-//                throw new ParticipationDeniedException("Club members cannot participate in their own club's events.");
-//            }
-//        }
-//
-//        // Step 3: Proceed with the existing logic if the checks pass
-//        Event event = eventRepository.findByIdAndClubId(eventId, clubId)
-//                .orElseThrow(() -> new EventNotFoundException("Event not found"));
-//
-//        if (participantRepository.existsByEventIdAndUserId(eventId, participantRequestDto.getUserId())) {
-//            throw new DuplicateParticipationException("User already participating in this event");
-//        }
-//
-//        EventParticipant participant = new EventParticipant();
-//        participant.setEventId(eventId);
-//        participant.setUserId(participantRequestDto.getUserId());
-//
-//        EventParticipant savedParticipant = participantRepository.save(participant);
-//        log.info("Participant saved: {}", savedParticipant);
-//
-//        participantRequestDto.setEventId(eventId);
-//        eventKafkaProducer.sendEventParticipationNotification(participantRequestDto);
-//        log.info("Event participation notification queued for user: {}", participantRequestDto.getUserId(), eventId);
-//
-//        return mapToParticipantResponseDto(savedParticipant);
-//    }
-
-    // --- ADD THIS NEW METHOD ---
     public OrderResponse startRegistration(Long clubId, Long eventId, RegistrationRequestDto request) {
         // 1. Validate the event exists and belongs to the club.
         eventRepository.findByIdAndClubId(eventId, clubId)
@@ -210,7 +160,10 @@ public class EventService {
         dto.setUpdatedAt(event.getUpdatedAt());
         dto.setMeetingLink(event.getMeetingLink());
         dto.setImageUrl(event.getImageUrl()); // Map the image URL
-        // Calculate the status based on the event date
+        dto.setContactName1(event.getContactName1());
+        dto.setContactPhone1(event.getContactPhone1());
+        dto.setContactName2(event.getContactName2());
+        dto.setContactPhone2(event.getContactPhone2());
         if (event.getDate() != null && event.getDate().isAfter(LocalDateTime.now())) {
             dto.setStatus("UPCOMING");
         } else {
@@ -247,7 +200,6 @@ public class EventService {
         eventRepository.save(event);
     }
 
-    // ADD THIS NEW METHOD: For the discussion service's cleanup scheduler
     public List<EventResponseDto> findEventsEndedBefore(LocalDate date) {
         LocalDateTime dateTime = date.atStartOfDay();
         return eventRepository.findByDateBefore(dateTime).stream()
@@ -255,7 +207,6 @@ public class EventService {
                 .collect(Collectors.toList());
     }
 
-    // ADD THIS NEW METHOD
     public EventResponseDto updateMeetingLink(Long clubId, Long eventId, String meetingLink) {
         Event event = eventRepository.findByIdAndClubId(eventId, clubId)
                 .orElseThrow(() -> new EventNotFoundException("Event not found"));
@@ -264,7 +215,6 @@ public class EventService {
         Event updatedEvent = eventRepository.save(event);
         return mapToEventResponseDto(updatedEvent);
     }
-    // ADD THIS NEW METHOD: Business logic to find events by date.
     public List<EventResponseDto> findEventsByDate(LocalDate date) {
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(23, 59, 59);
@@ -273,7 +223,7 @@ public class EventService {
                 .collect(Collectors.toList());
     }
 
-    // ADD THIS METHOD
+
     public List<EventResponseDto> getAllUpcomingEvents() {
         return eventRepository.findByDateAfterOrderByDateAsc(LocalDateTime.now())
                 .stream()

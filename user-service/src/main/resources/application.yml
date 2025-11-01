@@ -34,21 +34,6 @@ application:
       # Expiration time in milliseconds (e.g., 24 hours)
       expiration: 86400000
 
-#  security:
-#    oauth2:
-#      client:
-#        registration:
-#          google:
-#            client-id: your-google-client-id
-#            client-secret: your-google-client-secret
-#            scope:
-#              - email
-#              - profile
-#          github:
-#            client-id: your-github-client-id
-#            client-secret: your-github-client-secret
-
-
 eureka:
   instance:
     prefer-ip-address: true # Add this line
@@ -61,11 +46,6 @@ eureka:
 server:
   port: 8081   
 
-#app:
-#  token:
-#    ttl-hours: 72  # Token expiry in hours
-#  google:
-#    tokeninfo-url: https://oauth2.googleapis.com/tokeninfo  # URL for token info validation
 
 logging:
   level:
@@ -75,5 +55,3 @@ logging:
 # Feign Client Configuration for Notification Service
 # This can be overridden by environment variable.
 NOTIFICATION_SERVICE_URL: http://localhost:8085
-
-# Optional: Health and other configurations can be added here

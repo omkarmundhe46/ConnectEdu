@@ -31,22 +31,8 @@ import java.util.List;
 public class EventController {
 
     private final EventService eventService;
-    private final EventKafkaProducer eventKafkaProducer; // ADD THIS
-//    private final NotificationClient notificationClient;
-//    private ClubClient clubClient;
-    // Inject the new CertificateClient
+    private final EventKafkaProducer eventKafkaProducer;
     private final CertificateClient certificateClient;
-
-//    @PostMapping("/{clubId}/events")
-//    public ResponseEntity<EventResponseDto> createClubEvent(@PathVariable Long clubId,
-//                                                           @Valid @RequestBody EventRequestDto eventRequestDto) {
-//        EventResponseDto createdEvent = eventService.createClubEvent(clubId, eventRequestDto);
-//
-//        // Send event created notification asynchronously
-//        sendEventCreatedNotificationAsync(createdEvent);
-//
-//        return new ResponseEntity<>(createdEvent, HttpStatus.CREATED);
-//    }
 
     @PostMapping("/{clubId}/events")
     @PreAuthorize("hasAuthority('ROLE_CLUB_ADMIN')") // Only Club Admin can create events
@@ -59,20 +45,6 @@ public class EventController {
         return new ResponseEntity<>(createdEvent, HttpStatus.CREATED);
     }
 
-
-//    @Async
-//    public CompletableFuture<Void> sendEventCreatedNotificationAsync(EventResponseDto event) {
-//        try {
-//            log.info("🔔 Sending event created notification for eventId={}, clubId={}", event.getId(), event.getClubId());
-//
-//            notificationClient.notifyEventCreated(event);
-//
-//            log.info("✅ Event created notification sent for event: {}", event.getId());
-//        } catch (Exception e) {
-//            log.error("❌ Failed to send event created notification for event: {}", event.getId(), e);
-//        }
-//        return CompletableFuture.completedFuture(null);
-//    }
 
     @GetMapping("/{clubId}/events")
     @PreAuthorize("isAuthenticated()") // Any logged-in user can see events
@@ -104,17 +76,7 @@ public class EventController {
         return ResponseEntity.noContent().build();
     }
 
-//    @PostMapping("/{clubId}/events/{eventId}/participants")
-//    @PreAuthorize("isAuthenticated()") // Any logged-in user can attempt to participate
-//    public ResponseEntity<ParticipantResponseDto> addParticipantToEvent(@PathVariable Long clubId, @PathVariable Long eventId,
-//                                                                        @Valid @RequestBody EventParticipationDTO participantRequestDto) {
-//        // Business logic for who can participate should be inside the service layer
-//        ParticipantResponseDto participant = eventService.addParticipantToEvent(clubId, eventId, participantRequestDto);
-//        return new ResponseEntity<>(participant, HttpStatus.CREATED);
-//    }
 
-    @GetMapping("/{clubId}/events/{eventId}/participants")
-    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_COLLEGE_ADMIN')")
     public ResponseEntity<List<ParticipantResponseDto>> getEventParticipants(@PathVariable Long clubId, @PathVariable Long eventId) {
         if (isClubAdmin()) {
             validateClubOwnership(clubId);
@@ -140,12 +102,6 @@ public class EventController {
         log.info("Request received to download certificate for event {} and user {}", eventId, userId);
         return certificateClient.downloadCertificate(eventId, userId);
     }
-
-
-
-
-
-
 
     //Not required Many more and semi public endpoints //
     @GetMapping("/{clubId}/events/{eventId}")
@@ -192,7 +148,6 @@ public class EventController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Jwt jwt = (Jwt) authentication.getPrincipal();
 
-        // --- APPLY THE SAME FIX HERE ---
         Object userIdObj = jwt.getClaim("userId");
         if (userIdObj instanceof Number) {
             return ((Number) userIdObj).longValue();
@@ -207,7 +162,6 @@ public class EventController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Jwt jwt = (Jwt) authentication.getPrincipal();
 
-        // APPLY THE SAME FIX HERE
         Object managedClubIdObj = jwt.getClaim("managedClubId");
         Long managedClubId = null;
         if (managedClubIdObj instanceof Number) {
@@ -225,7 +179,7 @@ public class EventController {
                 .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_CLUB_ADMIN"));
     }
 
-    // THIS IS THE NEW STARTING POINT FOR REGISTRATION
+
     @PostMapping("/{clubId}/events/{eventId}/register")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrderResponse> startRegistration(
@@ -233,7 +187,7 @@ public class EventController {
             @PathVariable Long eventId,
             @RequestBody RegistrationRequestDto request) {
 
-        // We get the user ID from the token to prevent impersonation.
+
         request.setUserId(getAuthenticatedUserId());
 
         return ResponseEntity.ok(eventService.startRegistration(clubId, eventId, request));

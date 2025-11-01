@@ -9,7 +9,6 @@ import java.util.List;
 public interface DiscussionMessageRepository extends JpaRepository<DiscussionMessage, Long> {
     List<DiscussionMessage> findByEventIdOrderBySentAtAsc(Long eventId);
 
-    // ADD THIS METHOD: For the scheduled cleanup job
     @Transactional
     void deleteByEventIdIn(List<Long> eventIds);
 }

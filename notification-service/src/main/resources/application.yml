@@ -31,21 +31,6 @@ spring:
       bootstrap-servers: localhost:9092
       group-id: notification-group
       auto-offset-reset: earliest
-#      # Re-introducing the error handler to gracefully skip bad messages
-#      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
-#      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
-#      properties:
-#        # Tell the error handler which actual deserializers to use
-#        spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
-#        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
-#        # Trust all packages to prevent any future class name issues
-#        spring.json.trusted.packages: "*"
-#        # --- ADD THIS LINE ---
-#        # This tells the consumer what object to create when no type info is in the message header.
-#        # Use the class name *as it exists in this service*.
-#        spring.json.value.default.type: com.campusconnect.notificationservice.dto.CertificateNotificationRequest
-#        # ADD THIS FOR THE NEW TOPIC
-#        spring.json.type.mapping: userRegistered:com.campusconnect.notificationservice.dto.UserRegisteredRequest
 
 server:
   port: 8085

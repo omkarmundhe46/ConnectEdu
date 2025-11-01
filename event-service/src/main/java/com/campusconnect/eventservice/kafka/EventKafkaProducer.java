@@ -18,7 +18,6 @@ public class EventKafkaProducer {
     private static final String EVENT_PARTICIPATION_TOPIC = "event-participation-topic";
     private static final String PARTICIPANT_REGISTERED_TOPIC = "participant-registered-topic";
 
-    // --- THIS IS THE FIX ---
     // Change the method signature to accept an EventResponseDto, which matches what the controller is sending.
     public void sendEventCreatedNotification(EventResponseDto event) {
         log.info("Sending event created notification to Kafka topic: {}", EVENT_CREATED_TOPIC);

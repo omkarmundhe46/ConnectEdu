@@ -44,10 +44,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String userEmail = claims.getSubject();
 
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
-            // --- THIS IS THE FIX ---
-            // The token already contains the "ROLE_" prefix (e.g., "ROLE_COLLEGE_ADMIN").
-            // We now create the authorities directly from the roles in the token without adding another prefix.
             List<String> roles = claims.get("roles", List.class);
             List<SimpleGrantedAuthority> authorities = roles != null ? roles.stream()
                     .map(SimpleGrantedAuthority::new) // Directly use the role string from the token
