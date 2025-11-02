@@ -20,4 +20,6 @@ public class UserResponseDto {
     private Long managedClubId; // ADDED
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String phone;
+    private String profileImageUrl;
 }

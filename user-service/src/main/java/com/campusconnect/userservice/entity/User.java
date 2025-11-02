@@ -40,7 +40,13 @@ public class User implements UserDetails {
 
     @Column(nullable = false)
     private String department;
-    
+
+    @Column(name = "phone")
+    private String phone;
+
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+
     private String provider;
 
     @Column(name = "provider_id")

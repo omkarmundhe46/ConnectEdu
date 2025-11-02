@@ -52,6 +52,9 @@ public class JwtService {
             User user = (User) userDetails;
             extraClaims.put("userId", user.getId());
             extraClaims.put("name", user.getName());
+            extraClaims.put("phone", user.getPhone());
+            extraClaims.put("profileImageUrl", user.getProfileImageUrl());
+            extraClaims.put("department", user.getDepartment());
             if (user.getManagedClubId() != null) {
                 extraClaims.put("managedClubId", user.getManagedClubId());
             }

@@ -194,4 +194,15 @@ public class EventController {
     }
 
 
+    @GetMapping("/{clubId}/events/{eventId}/check-registration")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Boolean> checkRegistration(
+            @PathVariable Long clubId,
+            @PathVariable Long eventId) {
+
+        Long userId = getAuthenticatedUserId(); // Use your existing helper method
+        boolean isRegistered = eventService.isUserRegistered(eventId, userId);
+        return ResponseEntity.ok(isRegistered);
+    }
+
 }

@@ -24,7 +24,7 @@ public class ExcelExportController {
 
     @GetMapping("/excel")
     // CORRECTED: Only admins should be able to download participant lists.
-    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_COLLEGE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_CLUB_MEMBER')")
     public ResponseEntity<byte[]> downloadParticipantsExcel(@PathVariable Long clubId,
                                                             @PathVariable Long eventId) throws Exception {
         // Security check for club admins

@@ -1,23 +1,16 @@
 package com.campusconnect.userservice.controller;
 
-import com.campusconnect.userservice.dto.UpdateUserRoleRequest;
-import com.campusconnect.userservice.dto.UserRequestDto;
-import com.campusconnect.userservice.kafka.UserKafkaProducer; // Import Kafka producer
-import com.campusconnect.userservice.dto.UserResponseDto;
+import com.campusconnect.userservice.dto.*;
+import com.campusconnect.userservice.entity.User;
+import com.campusconnect.userservice.kafka.UserKafkaProducer;
 import com.campusconnect.userservice.service.UserService;
-//import com.campusconnect.userservice.client.NotificationClient;
-import com.campusconnect.userservice.dto.UserRegisteredRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
-
-import java.util.concurrent.CompletableFuture;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
@@ -28,6 +21,22 @@ public class UserController {
     
     private final UserService userService;
     private final UserKafkaProducer userKafkaProducer;
+
+
+    @PutMapping("/profile")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<AuthenticationResponse> updateUserProfile(
+            @Valid @RequestBody UpdateProfileRequestDto request,
+            Authentication authentication
+    ) {
+
+        User user = (User) authentication.getPrincipal();
+        Long userId = user.getId();
+
+        AuthenticationResponse response = userService.updateUserProfile(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
 
     @PutMapping("/{id}/role")
     @PreAuthorize("hasAnyAuthority('ROLE_COLLEGE_ADMIN', 'ROLE_CLUB_ADMIN')")

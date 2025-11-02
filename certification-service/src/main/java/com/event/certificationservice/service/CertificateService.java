@@ -114,7 +114,7 @@ public class CertificateService {
         // Step 1: Check the business rule (is it after 7 PM on the event day?)
         EventResponseDto event = eventClient.getEventById(eventId);
         LocalDate eventDate = event.getDate();
-        LocalDateTime activationTime = LocalDateTime.of(eventDate, LocalTime.of(19, 0));
+        LocalDateTime activationTime = LocalDateTime.of(eventDate, LocalTime.of(16, 0));
 
         if (LocalDateTime.now().isBefore(activationTime)) {
             throw new IllegalStateException("Certificate is not yet available for download. Please check back after 7 PM on the event date.");

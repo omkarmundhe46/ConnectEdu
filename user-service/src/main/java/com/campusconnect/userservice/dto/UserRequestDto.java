@@ -18,4 +18,5 @@ public class UserRequestDto {
 
     @NotBlank(message = "Department is required")
     private String department;
+
 }

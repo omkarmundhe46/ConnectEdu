@@ -1,8 +1,7 @@
 package com.campusconnect.userservice.service;
 
-import com.campusconnect.userservice.dto.UpdateUserRoleRequest;
-import com.campusconnect.userservice.dto.UserRequestDto;
-import com.campusconnect.userservice.dto.UserResponseDto;
+import com.campusconnect.userservice.config.JwtService;
+import com.campusconnect.userservice.dto.*;
 import com.campusconnect.userservice.entity.Role; // ADDED
  import com.campusconnect.userservice.entity.User;
 import com.campusconnect.userservice.exception.EmailAlreadyExistsException;
@@ -21,8 +20,12 @@ import java.util.stream.Collectors;
 public class UserService {
     
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder; // ADDED
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
     Logger log = org.slf4j.LoggerFactory.getLogger(UserService.class);
+
+    private static final String DEFAULT_PROFILE_IMAGE = "https://i.imgur.com/example.png";
+
 
     // This method is now handled by AuthenticationService, but we keep the core logic
     // for other parts of the app. It's important to encode the password here as well.
@@ -36,11 +39,28 @@ public class UserService {
                 .email(userRequestDto.getEmail())
                 .password(passwordEncoder.encode(userRequestDto.getPassword())) // ENCODE PASSWORD
                 .department(userRequestDto.getDepartment())
+                .phone(null) // Set default phone
+                .profileImageUrl(DEFAULT_PROFILE_IMAGE)
                 .role(Role.USER) // Set default role
                 .build();
 
         User savedUser = userRepository.save(user);
         return mapToResponseDto(savedUser);
+    }
+
+    public AuthenticationResponse updateUserProfile(Long userId, UpdateProfileRequestDto request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+
+        // Update the fields from the request
+        user.setPhone(request.getPhone());
+        user.setProfileImageUrl(request.getProfileImageUrl());
+
+        User savedUser = userRepository.save(user);
+
+        // Generate a new token with the updated claims
+        String jwtToken = jwtService.generateToken(savedUser);
+        return AuthenticationResponse.builder().token(jwtToken).build();
     }
 
     public List<UserResponseDto> getAllUsers() {

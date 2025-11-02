@@ -37,7 +37,7 @@ spring:
         - id: event-service
           uri: lb://event-service
           predicates:
-            - Path=/api/clubs/{clubId}/events/**, /internal/api/events/**, /api/events/upcoming
+            - Path=/api/clubs/{clubId}/events/**, /internal/api/events/**, /api/events/upcoming, /api/events/my-registrations
 
 
         - id: club-service
@@ -50,3 +50,9 @@ spring:
           uri: lb://certificate-service
           predicates:
             - Path=/api/certificates/**
+
+
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/**

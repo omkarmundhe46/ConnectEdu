@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -205,6 +205,51 @@ public class EventService {
         return eventRepository.findByDateBefore(dateTime).stream()
                 .map(this::mapToEventResponseDto)
                 .collect(Collectors.toList());
+    }
+
+    public List<MyRegistrationResponseDto> getRegistrationsForUser(Long userId) {
+        // 1. Get all participations for the user
+        List<EventParticipant> participations = participantRepository.findByUserId(userId);
+        if (participations.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 2. Get all unique event IDs
+        List<Long> eventIds = participations.stream()
+                .map(EventParticipant::getEventId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 3. Fetch all corresponding events in one query
+        Map<Long, Event> eventMap = eventRepository.findAllById(eventIds).stream()
+                .collect(Collectors.toMap(Event::getId, event -> event));
+
+        // 4. Combine the data
+        return participations.stream()
+                .map(p -> {
+                    Event event = eventMap.get(p.getEventId());
+                    if (event == null) return null; // Should not happen
+
+                    String status = event.getDate() != null && event.getDate().isAfter(LocalDateTime.now()) ? "UPCOMING" : "COMPLETED";
+
+                    return MyRegistrationResponseDto.builder()
+                            .registeredAt(p.getRegisteredAt())
+                            .paymentId(p.getPaymentId())
+                            .eventId(event.getId())
+                            .clubId(event.getClubId())
+                            .eventName(event.getName())
+                            .eventImageUrl(event.getImageUrl())
+                            .eventDate(event.getDate())
+                            .eventStatus(status)
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(MyRegistrationResponseDto::getEventDate).reversed()) // Show newest first
+                .collect(Collectors.toList());
+    }
+
+    public boolean isUserRegistered(Long eventId, Long userId) {
+        return participantRepository.existsByEventIdAndUserId(eventId, userId);
     }
 
     public EventResponseDto updateMeetingLink(Long clubId, Long eventId, String meetingLink) {

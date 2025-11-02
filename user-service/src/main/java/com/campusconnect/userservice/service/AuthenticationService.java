@@ -26,6 +26,7 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UserKafkaProducer userKafkaProducer;
+    private static final String DEFAULT_PROFILE_IMAGE = "https://i.imgur.com/example.png";
 
     public UserResponseDto register(UserRequestDto request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -37,15 +38,17 @@ public class AuthenticationService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .department(request.getDepartment())
-                .role(Role.USER) // New users are always 'USER' by default
+                .role(Role.USER)
+                .phone(null)
+                .profileImageUrl(DEFAULT_PROFILE_IMAGE)
                 .build();
         User savedUser = userRepository.save(user);
 
         // Create the notification request AND populate all the necessary fields.
         UserRegisteredRequest notificationRequest = new UserRegisteredRequest();
         notificationRequest.setUserId(savedUser.getId());
-        notificationRequest.setName(savedUser.getName());   // Add the name
-        notificationRequest.setEmail(savedUser.getEmail()); // Add the email
+        notificationRequest.setName(savedUser.getName());
+        notificationRequest.setEmail(savedUser.getEmail());
         notificationRequest.setRequestId("user-registered-" + savedUser.getId());
 
         // Send the complete DTO to Kafka
@@ -58,6 +61,8 @@ public class AuthenticationService {
                 .email(savedUser.getEmail())
                 .department(savedUser.getDepartment())
                 .role(savedUser.getRole())
+                .phone(savedUser.getPhone())
+                .profileImageUrl(savedUser.getProfileImageUrl())
                 .build();
     }
 
