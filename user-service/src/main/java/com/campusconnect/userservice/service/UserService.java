@@ -13,6 +13,7 @@ import com.campusconnect.userservice.repository.VerificationTokenRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder; // ADDED
  import org.springframework.stereotype.Service;
 
@@ -228,5 +229,26 @@ public class UserService {
         notificationRequest.setRequestId("user-registered-" + user.getId());
         userKafkaProducer.sendUserRegisteredNotification(notificationRequest);
         // --- END OF ADDITION ---
+    }
+
+    public void changePassword(Long userId, ChangePasswordRequestDto request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+
+        // 1. Check if the current password matches
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BadCredentialsException("Incorrect current password.");
+        }
+
+        // 2. Check if the new password is the same as the old one
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("New password cannot be the same as the old password.");
+        }
+
+        // 3. Encode and save the new password
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        log.info("User {} successfully changed their password.", user.getEmail());
     }
 }

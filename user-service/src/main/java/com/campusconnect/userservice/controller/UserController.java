@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -37,6 +38,23 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/change-password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<String> changePassword(
+            @Valid @RequestBody ChangePasswordRequestDto request,
+            Authentication authentication
+    ) {
+        try {
+            User user = (User) authentication.getPrincipal();
+            userService.changePassword(user.getId(), request);
+            return ResponseEntity.ok("Password changed successfully.");
+        } catch (BadCredentialsException | IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Error changing password for user {}", authentication.getName(), e);
+            return ResponseEntity.internalServerError().body("An unexpected error occurred.");
+        }
+    }
 
     @PutMapping("/{id}/role")
     @PreAuthorize("hasAnyAuthority('ROLE_COLLEGE_ADMIN', 'ROLE_CLUB_ADMIN')")
