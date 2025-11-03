@@ -60,6 +60,10 @@ public class User implements UserDetails {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "is_verified", nullable = false)
+    @Builder.Default // This ensures it's false by default when using @Builder
+    private boolean isVerified = false;
+
 // ADDED: Field to store the user's role
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

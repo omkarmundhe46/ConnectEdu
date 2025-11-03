@@ -1,11 +1,7 @@
 package com.campusconnect.userservice.service;
 
 import com.campusconnect.userservice.config.JwtService;
-import com.campusconnect.userservice.dto.AuthenticationResponse;
-import com.campusconnect.userservice.dto.LoginRequest;
-import com.campusconnect.userservice.dto.UserRequestDto;
-import com.campusconnect.userservice.dto.UserResponseDto;
-import com.campusconnect.userservice.dto.UserRegisteredRequest;
+import com.campusconnect.userservice.dto.*;
 import com.campusconnect.userservice.entity.Role;
 import com.campusconnect.userservice.entity.User;
 import com.campusconnect.userservice.exception.EmailAlreadyExistsException;
@@ -13,6 +9,7 @@ import com.campusconnect.userservice.kafka.UserKafkaProducer;
 import com.campusconnect.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,6 +23,7 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UserKafkaProducer userKafkaProducer;
+    private final UserService userService; // --- INJECT UserService ---
     private static final String DEFAULT_PROFILE_IMAGE = "https://i.imgur.com/example.png";
 
     public UserResponseDto register(UserRequestDto request) {
@@ -41,20 +39,22 @@ public class AuthenticationService {
                 .role(Role.USER)
                 .phone(null)
                 .profileImageUrl(DEFAULT_PROFILE_IMAGE)
+                .isVerified(false) // User is not verified on creation
                 .build();
         User savedUser = userRepository.save(user);
 
-        // Create the notification request AND populate all the necessary fields.
-        UserRegisteredRequest notificationRequest = new UserRegisteredRequest();
-        notificationRequest.setUserId(savedUser.getId());
-        notificationRequest.setName(savedUser.getName());
-        notificationRequest.setEmail(savedUser.getEmail());
-        notificationRequest.setRequestId("user-registered-" + savedUser.getId());
+        // 1. Create an OTP for the user
+        String otp = userService.createVerificationToken(savedUser);
 
-        // Send the complete DTO to Kafka
-        userKafkaProducer.sendUserRegisteredNotification(notificationRequest);
+        // 2. Send the OTP to the email-verification-topic
+        EmailVerificationRequest emailRequest = EmailVerificationRequest.builder()
+                .email(savedUser.getEmail())
+                .name(savedUser.getName())
+                .otp(otp)
+                .build();
+        userKafkaProducer.sendEmailVerification(emailRequest);
 
-        // Return a response DTO (create one if you don't have it)
+        // 4. Return the user DTO, but NO token.
         return UserResponseDto.builder()
                 .id(savedUser.getId())
                 .name(savedUser.getName())
@@ -72,6 +72,12 @@ public class AuthenticationService {
         );
 
         User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
+
+        if (!user.isVerified()) {
+            throw new BadCredentialsException("User is not verified. Please check your email for a verification code.");
+        }
+
+
         String jwtToken = jwtService.generateToken(user);
         return AuthenticationResponse.builder().token(jwtToken).build();
     }

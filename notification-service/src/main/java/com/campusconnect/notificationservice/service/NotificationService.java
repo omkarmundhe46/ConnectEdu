@@ -231,7 +231,6 @@ public class NotificationService {
 
 			emailSenderService.sendEmailAsync(savedLog);
 
-			// Save request
 			NotificationRequest notificationRequest = new NotificationRequest();
 			notificationRequest.setRequestId(requestId);
 			notificationRequest.setNotificationType("CLUB_MEMBER_ADDED");
@@ -286,14 +285,12 @@ public class NotificationService {
 			String subject;
 			String body;
 
-			// Choose template logic
 			switch (templateCode) {
-			case "WELCOME":
-				subject = "Welcome to CampusConnect, " + variables.getOrDefault("name", "User") + "!";
-				body = "<h1>Hello " + variables.getOrDefault("name", "User") + "</h1>"
-						+ "<p>Welcome to CampusConnect 🎉</p>" + "<p>Your registered email is: "
-						+ variables.getOrDefault("email", "unknown") + "</p>";
-				break;
+				case "WELCOME_USER":
+					subject = "Welcome to ConnectEdu, " + variables.getOrDefault("name", "User") + "!";
+					body = "<h1>Hello " + variables.getOrDefault("name", "User") + ",</h1>"
+							+ "<p>You have successfully registered for ConnectEdu. Welcome! 🎉</p>";
+					break;
 
 			case "EVENT_CREATED":
 				subject = "🎉 Congratulations! " + variables.getOrDefault("eventTitle", "An event")
@@ -313,7 +310,7 @@ public class NotificationService {
 			}
 
 			NotificationLog logEntry = new NotificationLog();
-			logEntry.setTemplateId(null); // no template used in simple mode
+			logEntry.setTemplateId(null);
 			logEntry.setUserId(userId);
 			logEntry.setToEmail(toEmail);
 			logEntry.setSubject(subject);
@@ -329,6 +326,32 @@ public class NotificationService {
 		}
 
 		return CompletableFuture.completedFuture(null);
+	}
+
+	public void sendVerificationEmail(EmailVerificationRequest request) {
+		log.info("Preparing verification email for: {}", request.getEmail());
+
+		try {
+			String subject = "Your ConnectEdu Verification Code";
+			String body = "<h1>Hello " + request.getName() + ",</h1>"
+					+ "<p>Thank you for registering with ConnectEdu. Your verification code is:</p>"
+					+ "<h2 style='color: #4A55A2;'>" + request.getOtp() + "</h2>"
+					+ "<p>This code is valid for 10 minutes.</p>"
+					+ "<p>If you did not request this, please ignore this email.</p>";
+
+			NotificationLog logEntry = new NotificationLog();
+			logEntry.setToEmail(request.getEmail());
+			logEntry.setSubject(subject);
+			logEntry.setBody(body);
+
+			NotificationLog savedLog = logRepository.save(logEntry);
+
+			emailSenderService.sendEmailAsync(savedLog);
+			log.info("✅ Verification email enqueued for {}", request.getEmail());
+
+		} catch (Exception e) {
+			log.error("❌ Failed to send verification email: {}", e.getMessage(), e);
+		}
 	}
 
 	public List<NotificationLogResponseDto> getNotificationsForUser(Long userId) {

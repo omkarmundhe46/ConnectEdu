@@ -31,8 +31,7 @@ public class KafkaConsumerConfig {
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
-        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*"); // Trust all packages for simplicity
-        // This is the key part: we tell the deserializer which object to create by default
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, trustedClass);
         return props;
     }
@@ -111,6 +110,18 @@ public class KafkaConsumerConfig {
     public ConcurrentKafkaListenerContainerFactory<String, ParticipantRegisteredEvent> participantRegisteredListenerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, ParticipantRegisteredEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(participantRegisteredConsumerFactory());
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, EmailVerificationRequest> emailVerificationConsumerFactory() {
+        return new DefaultKafkaConsumerFactory<>(consumerConfigs(EmailVerificationRequest.class));
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, EmailVerificationRequest> emailVerificationListenerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, EmailVerificationRequest> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(emailVerificationConsumerFactory());
         return factory;
     }
 }

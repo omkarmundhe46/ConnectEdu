@@ -4,15 +4,21 @@ import com.campusconnect.userservice.config.JwtService;
 import com.campusconnect.userservice.dto.*;
 import com.campusconnect.userservice.entity.Role; // ADDED
  import com.campusconnect.userservice.entity.User;
+import com.campusconnect.userservice.entity.VerificationToken;
 import com.campusconnect.userservice.exception.EmailAlreadyExistsException;
 import com.campusconnect.userservice.exception.UserNotFoundException;
+import com.campusconnect.userservice.kafka.UserKafkaProducer;
 import com.campusconnect.userservice.repository.UserRepository;
+import com.campusconnect.userservice.repository.VerificationTokenRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder; // ADDED
  import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,7 +27,9 @@ public class UserService {
     
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final VerificationTokenRepository tokenRepository; // --- INJECT ---
     private final JwtService jwtService;
+    private final UserKafkaProducer userKafkaProducer; // --- ADD THIS FIELD ---
     Logger log = org.slf4j.LoggerFactory.getLogger(UserService.class);
 
     private static final String DEFAULT_PROFILE_IMAGE = "https://i.imgur.com/example.png";
@@ -153,5 +161,72 @@ public class UserService {
 
         userRepository.save(user);
         log.info("Successfully updated role for user {} to {}", userId, request.getNewRole());
+    }
+
+    /**
+     * Generates a 6-digit OTP.
+     */
+    private String generateOtp() {
+        return String.format("%06d", new Random().nextInt(999999));
+    }
+
+    /**
+     * Creates or updates a verification token for a user.
+     * Returns the 6-digit OTP.
+     */
+    @Transactional
+    public String createVerificationToken(User user) {
+        String otp = generateOtp();
+        LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(10); // Token is valid for 10 minutes
+
+        // Find existing token for this user, or create a new one
+        VerificationToken token = tokenRepository.findByUser(user)
+                .orElse(new VerificationToken());
+
+        token.setUser(user);
+        token.setOtp(otp);
+        token.setExpiryTime(expiryTime);
+
+        tokenRepository.save(token);
+        log.info("Generated new OTP {} for user {}", otp, user.getEmail());
+        return otp;
+    }
+
+     //    * Validates an OTP for a given email.
+
+    @Transactional
+    public void validateVerificationToken(String email, String otp) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+
+        VerificationToken token = tokenRepository.findByOtp(otp)
+                .orElseThrow(() -> new RuntimeException("Invalid OTP."));
+
+        if (!token.getUser().equals(user)) {
+            log.warn("OTP mismatch for user {}", email);
+            throw new RuntimeException("Invalid OTP for this user.");
+        }
+
+        if (token.getExpiryTime().isBefore(LocalDateTime.now())) {
+            log.warn("Expired OTP used for user {}", email);
+            tokenRepository.delete(token); // Clean up expired token
+            throw new RuntimeException("OTP has expired. Please request a new one.");
+        }
+
+        user.setVerified(true);
+        userRepository.save(user);
+        log.info("User {} successfully verified.", email);
+
+        tokenRepository.delete(token); // Token is used, delete it
+
+        // --- 3. ADD THIS BLOCK ---
+        // Send the "Welcome" notification AFTER verification is successful
+        UserRegisteredRequest notificationRequest = new UserRegisteredRequest();
+        notificationRequest.setUserId(user.getId());
+        notificationRequest.setName(user.getName());
+        notificationRequest.setEmail(user.getEmail());
+        notificationRequest.setRequestId("user-registered-" + user.getId());
+        userKafkaProducer.sendUserRegisteredNotification(notificationRequest);
+        // --- END OF ADDITION ---
     }
 }
