@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -328,5 +329,22 @@ public class NotificationService {
 		}
 
 		return CompletableFuture.completedFuture(null);
+	}
+
+	public List<NotificationLogResponseDto> getNotificationsForUser(Long userId) {
+		log.info("Fetching notifications for user {}", userId);
+		return logRepository.findByUserIdOrderByCreatedAtDesc(userId)
+				.stream()
+				.map(this::mapToDto)
+				.collect(Collectors.toList());
+	}
+
+	private NotificationLogResponseDto mapToDto(NotificationLog log) {
+		return NotificationLogResponseDto.builder()
+				.id(log.getId())
+				.subject(log.getSubject())
+				.body(log.getBody())
+				.createdAt(log.getCreatedAt())
+				.build();
 	}
 }
