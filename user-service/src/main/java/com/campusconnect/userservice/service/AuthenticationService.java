@@ -23,7 +23,7 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UserKafkaProducer userKafkaProducer;
-    private final UserService userService; // --- INJECT UserService ---
+    private final UserService userService;
     private static final String DEFAULT_PROFILE_IMAGE = "https://i.imgur.com/example.png";
 
     public UserResponseDto register(UserRequestDto request) {
@@ -39,7 +39,8 @@ public class AuthenticationService {
                 .role(Role.USER)
                 .phone(null)
                 .profileImageUrl(DEFAULT_PROFILE_IMAGE)
-                .isVerified(false) // User is not verified on creation
+                .isVerified(false)
+                .provider("local")
                 .build();
         User savedUser = userRepository.save(user);
 
@@ -72,6 +73,10 @@ public class AuthenticationService {
         );
 
         User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
+
+        if (!"local".equals(user.getProvider())) {
+            throw new BadCredentialsException("This account is registered with Google. Please use Google login.");
+        }
 
         if (!user.isVerified()) {
             throw new BadCredentialsException("User is not verified. Please check your email for a verification code.");

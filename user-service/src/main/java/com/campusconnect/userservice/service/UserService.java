@@ -3,7 +3,7 @@ package com.campusconnect.userservice.service;
 import com.campusconnect.userservice.config.JwtService;
 import com.campusconnect.userservice.dto.*;
 import com.campusconnect.userservice.entity.Role; // ADDED
- import com.campusconnect.userservice.entity.User;
+import com.campusconnect.userservice.entity.User;
 import com.campusconnect.userservice.entity.VerificationToken;
 import com.campusconnect.userservice.exception.EmailAlreadyExistsException;
 import com.campusconnect.userservice.exception.UserNotFoundException;
@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder; // ADDED
- import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,19 +25,16 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final VerificationTokenRepository tokenRepository; // --- INJECT ---
+    private final VerificationTokenRepository tokenRepository;
     private final JwtService jwtService;
-    private final UserKafkaProducer userKafkaProducer; // --- ADD THIS FIELD ---
+    private final UserKafkaProducer userKafkaProducer;
     Logger log = org.slf4j.LoggerFactory.getLogger(UserService.class);
 
     private static final String DEFAULT_PROFILE_IMAGE = "https://i.imgur.com/example.png";
 
-
-    // This method is now handled by AuthenticationService, but we keep the core logic
-    // for other parts of the app. It's important to encode the password here as well.
     public UserResponseDto createUser(UserRequestDto userRequestDto) {
         if (userRepository.existsByEmail(userRequestDto.getEmail())) {
             throw new EmailAlreadyExistsException("Email already exists: " + userRequestDto.getEmail());
@@ -61,7 +58,6 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
 
-        // Update the fields from the request
         user.setPhone(request.getPhone());
         user.setProfileImageUrl(request.getProfileImageUrl());
 
@@ -84,7 +80,6 @@ public class UserService {
         return mapToResponseDto(user);
     }
 
-    // --- ADD THIS NEW METHOD FOE EXCEL ---
     public List<UserResponseDto> getUsersByIds(List<Long> userIds) {
         return userRepository.findAllById(userIds).stream()
                 .map(this::mapToResponseDto)
@@ -100,17 +95,17 @@ public class UserService {
     public UserResponseDto updateUser(Long id, UserRequestDto userRequestDto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
-        
-        if (!user.getEmail().equals(userRequestDto.getEmail()) && 
-            userRepository.existsByEmail(userRequestDto.getEmail())) {
+
+        if (!user.getEmail().equals(userRequestDto.getEmail()) &&
+                userRepository.existsByEmail(userRequestDto.getEmail())) {
             throw new EmailAlreadyExistsException("Email already exists: " + userRequestDto.getEmail());
         }
-        
+
         user.setName(userRequestDto.getName());
         user.setEmail(userRequestDto.getEmail());
         user.setPassword(userRequestDto.getPassword());
         user.setDepartment(userRequestDto.getDepartment());
-        
+
         User updatedUser = userRepository.save(user);
         return mapToResponseDto(updatedUser);
     }
@@ -135,8 +130,10 @@ public class UserService {
         dto.setName(user.getName());
         dto.setEmail(user.getEmail());
         dto.setDepartment(user.getDepartment());
-        dto.setRole(user.getRole()); // ADD ROLE
-        dto.setManagedClubId(user.getManagedClubId()); // ADD MANAGED CLUB ID
+        dto.setRole(user.getRole());
+        dto.setManagedClubId(user.getManagedClubId());
+        dto.setPhone(user.getPhone());
+        dto.setProfileImageUrl(user.getProfileImageUrl());
         dto.setCreatedAt(user.getCreatedAt());
         dto.setUpdatedAt(user.getUpdatedAt());
         return dto;
@@ -156,7 +153,6 @@ public class UserService {
         if (request.getNewRole() == Role.CLUB_ADMIN) {
             user.setManagedClubId(request.getManagedClubId());
         } else {
-            // If they are being changed to something else, clear the managed club id
             user.setManagedClubId(null);
         }
 
@@ -193,7 +189,6 @@ public class UserService {
         return otp;
     }
 
-     //    * Validates an OTP for a given email.
 
     @Transactional
     public void validateVerificationToken(String email, String otp) {
@@ -218,9 +213,9 @@ public class UserService {
         userRepository.save(user);
         log.info("User {} successfully verified.", email);
 
-        tokenRepository.delete(token); // Token is used, delete it
+        tokenRepository.delete(token);
 
-        // --- 3. ADD THIS BLOCK ---
+
         // Send the "Welcome" notification AFTER verification is successful
         UserRegisteredRequest notificationRequest = new UserRegisteredRequest();
         notificationRequest.setUserId(user.getId());
@@ -228,7 +223,7 @@ public class UserService {
         notificationRequest.setEmail(user.getEmail());
         notificationRequest.setRequestId("user-registered-" + user.getId());
         userKafkaProducer.sendUserRegisteredNotification(notificationRequest);
-        // --- END OF ADDITION ---
+
     }
 
     public void changePassword(Long userId, ChangePasswordRequestDto request) {

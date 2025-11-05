@@ -26,6 +26,20 @@ spring:
         # This is crucial: it sends plain JSON without Java class headers.
         spring.json.add.type.headers: false
 
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 174735420513-6jfh3tk5bjn5j5qr2a41av8osqs83al6.apps.googleusercontent.com
+            client-secret: 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
+            scope:
+              - email
+              - profile
+              - openid
+            redirect-uri: http://localhost:8080/login/oauth2/code/google
+
 application:
   security:
     jwt:
@@ -33,6 +47,10 @@ application:
       secret-key: NjdFNkEzRDA3RTY4NkM1OUQxN0E5RkU4NzQ2Njg5QzI3MjgzNTZFRDE3RTFCOTE1RkY1NEZDRTE1NTYyN0IzNA==
       # Expiration time in milliseconds (e.g., 24 hours)
       expiration: 86400000
+
+
+  oauth2:
+    redirect-uri: connectedu://login
 
 eureka:
   instance:

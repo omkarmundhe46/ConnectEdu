@@ -35,7 +35,7 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = true)  // for oath make it true
     private String password;
 
     @Column(nullable = false)
@@ -47,6 +47,7 @@ public class User implements UserDetails {
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
+    @Column(name = "provider")
     private String provider;
 
     @Column(name = "provider_id")
@@ -74,10 +75,6 @@ public class User implements UserDetails {
     private Long managedClubId;
 
 
-
-
-
-
     @OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ClubMembership> clubMemberships;
 
@@ -85,11 +82,6 @@ public class User implements UserDetails {
     private List<EventParticipation> eventParticipations;
 
 
-
-
-
-
-    // --- UserDetails Methods (Required by Spring Security) ---
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
