@@ -1,5 +1,6 @@
 server:
   port: 8080
+  forward-headers-strategy: native
 
 eureka:
   instance:
@@ -19,7 +20,7 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/auth/**, /api/users/**, /internal/api/users/**, /oauth2/**, /login/oauth2/**
+            - Path=/auth/**, /api/users/**, /internal/api/users/**, /oauth2/**, /login/oauth2/**, /login
 
 
         - id: upload-service

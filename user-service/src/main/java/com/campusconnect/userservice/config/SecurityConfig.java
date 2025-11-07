@@ -36,7 +36,8 @@ public class SecurityConfig {
                                 "/auth/**",
                                 "/internal/api/users/**",
                                 "/login/oauth2/**",
-                                "/oauth2/**"
+                                "/oauth2/**",
+                                "/login"
                         ).permitAll()
 
                         .anyRequest().authenticated()
@@ -54,6 +55,11 @@ public class SecurityConfig {
                                 .oidcUserService(customOidcUserService)
                         )
                         .successHandler(oAuth2SuccessHandler)
+                        .failureHandler((request, response, exception) -> {
+                            String baseUrl = request.getRequestURL().toString().split("/login/oauth2/code/facebook")[0];
+                            String targetUrl = baseUrl + "/auth/oauth-failure?error=" + exception.getLocalizedMessage();
+                            response.sendRedirect(targetUrl);
+                        })
                 );
 
         return http.build();

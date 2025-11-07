@@ -38,7 +38,26 @@ spring:
               - email
               - profile
               - openid
-            redirect-uri: http://localhost:8080/login/oauth2/code/google
+            #            redirect-uri: http://localhost:8080/login/oauth2/code/google
+            redirect-uri: https://toniest-wilda-unfabulously.ngrok-free.dev/login/oauth2/code/google
+
+
+          facebook:
+            client-id: 24961389930191078
+            client-secret: d4c68539931f142f3c45678984c667fa
+            scope:
+              - email
+              - public_profile
+            provider: facebook
+            redirect-uri: https://toniest-wilda-unfabulously.ngrok-free.dev/login/oauth2/code/facebook
+
+        provider:
+          facebook:
+            # user-info-uri belongs here (not under registration)
+            user-info-uri: https://graph.facebook.com/me?fields=id,name,email,picture.type(large)
+            user-name-attribute: id      # Facebook's user id field
+
+
 
 application:
   security:
@@ -62,7 +81,8 @@ eureka:
 
 
 server:
-  port: 8081   
+  port: 8081
+  forward-headers-strategy: NATIVE
 
 
 logging:
