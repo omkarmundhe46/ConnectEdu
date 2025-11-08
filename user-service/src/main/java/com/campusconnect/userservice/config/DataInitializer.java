@@ -30,6 +30,8 @@ public class DataInitializer implements CommandLineRunner {
                     .password(passwordEncoder.encode("connectedu8"))
                     .department("Administration")
                     .role(Role.COLLEGE_ADMIN) // Assign the highest role
+                    .isVerified(true)
+                    .provider("local")
                     .build();
 
             userRepository.save(adminUser);
