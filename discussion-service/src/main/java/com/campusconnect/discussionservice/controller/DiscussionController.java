@@ -1,7 +1,10 @@
 package com.campusconnect.discussionservice.controller;
 
+import com.campusconnect.discussionservice.client.UserClient;
+import com.campusconnect.discussionservice.dto.ChatMessageDto;
 import com.campusconnect.discussionservice.dto.MessageRequestDto;
 import com.campusconnect.discussionservice.dto.MessageResponseDto;
+import com.campusconnect.discussionservice.dto.UserDto;
 import com.campusconnect.discussionservice.entity.DiscussionMessage;
 import com.campusconnect.discussionservice.service.DiscussionService;
 import lombok.RequiredArgsConstructor;
@@ -13,9 +16,12 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-// --- API IMPROVEMENT: A more RESTful and consistent URL path ---
 @RestController
 @RequestMapping("/api/clubs/{clubId}/events/{eventId}/discussions")
 @RequiredArgsConstructor
@@ -23,12 +29,48 @@ import java.util.List;
 public class DiscussionController {
 
     private final DiscussionService discussionService;
+    private final UserClient userClient;
 
     @GetMapping("/messages")
-    public ResponseEntity<List<MessageResponseDto>> getMessages(@PathVariable Long clubId, @PathVariable Long eventId) {
+    public ResponseEntity<List<ChatMessageDto>> getMessages(@PathVariable Long clubId, @PathVariable Long eventId) {
         Long userId = getAuthenticatedUserId();
+
+        // This service method now just validates membership and fetches messages
         List<MessageResponseDto> messages = discussionService.getEventMessages(clubId, eventId, userId);
-        return ResponseEntity.ok(messages);
+
+        List<Long> userIds = messages.stream()
+                // 2. Map from the correct DTO type.
+                .map(MessageResponseDto::getUserId)
+                .distinct()
+                .toList();
+
+        // Fetch user details in a single batch call
+        Map<Long, UserDto> userMap = userClient.getUsersByIds(userIds).stream()
+                .collect(Collectors.toMap(UserDto::getId, Function.identity()));
+
+        // Map to the ChatMessageDto
+        List<ChatMessageDto> dtos = messages.stream().map(msg -> {
+            // 1. Create a default UserDto
+            UserDto defaultUser = new UserDto();
+            defaultUser.setId(msg.getUserId());
+            defaultUser.setName("Unknown User");
+
+            // 2. Get the real user, or use the default
+            UserDto user = userMap.getOrDefault(msg.getUserId(), defaultUser);
+
+            return ChatMessageDto.builder()
+                    .id(msg.getId())
+                    .content(msg.getContent())
+                    .fileUrl(msg.getFileUrl())
+                    .messageType(msg.getMessageType())
+                    .userId(user.getId())
+                    .userName(user.getName())
+                    // 3. Get the 'sentAt' time from the msg DTO
+                    .sentAt(msg.getSentAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+                    .build();
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtos);
     }
 
     @PostMapping("/messages")
@@ -36,15 +78,6 @@ public class DiscussionController {
         request.setUserId(getAuthenticatedUserId());
         request.setMessageType(DiscussionMessage.MessageType.TEXT);
         MessageResponseDto message = discussionService.sendTextMessage(clubId, eventId, request);
-        return ResponseEntity.ok(message);
-    }
-
-    @PostMapping(value = "/messages/file", consumes = "multipart/form-data")
-    public ResponseEntity<MessageResponseDto> sendFileMessage(@PathVariable Long clubId, @PathVariable Long eventId,
-                                                              @RequestParam("file") MultipartFile file,
-                                                              @RequestParam("messageType") DiscussionMessage.MessageType messageType) {
-        Long userId = getAuthenticatedUserId();
-        MessageResponseDto message = discussionService.sendFileMessage(clubId, eventId, userId, file, messageType);
         return ResponseEntity.ok(message);
     }
 

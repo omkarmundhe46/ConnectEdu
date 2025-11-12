@@ -6,11 +6,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer; // Import this
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher; // Import this
+// --- REMOVE THIS, IT'S THE OLD STYLE ---
+// import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -25,16 +26,19 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-
+                        // --- THIS IS THE FIX ---
+                        // We must permit the WebSocket handshake endpoint
+                        .requestMatchers("/ws/**").permitAll()
+                        // --- END OF FIX ---
                         .requestMatchers(
-                                new AntPathRequestMatcher("/internal/api/discussions/**")
+                                "/internal/api/discussions/**" // For the cleanup job
                         ).permitAll()
-
                         .requestMatchers(
-                                new AntPathRequestMatcher("/api/uploads/**"),
-                                new AntPathRequestMatcher("/api/clubs/**")
+                                "/api/uploads/**" // For uploading images
                         ).authenticated()
-
+                        .requestMatchers(
+                                "/api/clubs/**" // For REST endpoints
+                        ).authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -43,4 +47,3 @@ public class SecurityConfig {
         return http.build();
     }
 }
-

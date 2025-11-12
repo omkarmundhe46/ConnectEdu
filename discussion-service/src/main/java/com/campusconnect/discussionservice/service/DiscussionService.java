@@ -95,6 +95,10 @@ public class DiscussionService {
         messageRepository.delete(message);
     }
 
+    public void deleteMessagesByEventId(Long eventId) {
+        messageRepository.deleteByEventId(eventId);
+    }
+
 
     private void validateMembership(Long clubId, Long userId) {
 

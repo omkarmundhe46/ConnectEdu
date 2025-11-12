@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 
-@FeignClient(name = "club-service", url = "${CLUB_SERVICE_URL:http://localhost:8082}/internal/api/clubs")
+@FeignClient(name = "club-service")
 public interface ClubClient {
     @GetMapping("/{clubId}/members")
     List<ClubMemberDto> getClubMembers(@PathVariable("clubId") Long clubId);

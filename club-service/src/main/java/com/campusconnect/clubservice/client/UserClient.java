@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 // 1. CHANGE: Point to the ROOT of the user-service
-@FeignClient(name = "user-service", url = "${USER_SERVICE_URL:http://localhost:8081}")
+@FeignClient(name = "user-service")
 public interface UserClient {
 
     // 2. CHANGE: Add the FULL internal path

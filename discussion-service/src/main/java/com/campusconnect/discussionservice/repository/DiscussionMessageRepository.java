@@ -11,4 +11,7 @@ public interface DiscussionMessageRepository extends JpaRepository<DiscussionMes
 
     @Transactional
     void deleteByEventIdIn(List<Long> eventIds);
+
+    @Transactional
+    void deleteByEventId(Long eventId);
 }

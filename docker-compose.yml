@@ -1,5 +1,7 @@
 version: '3.8'
+
 services:
+  # 1. ZOOKEEPER
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.0
     container_name: zookeeper
@@ -8,7 +10,10 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    networks:
+      - connectedu-net
 
+  # 2. KAFKA
   kafka:
     image: confluentinc/cp-kafka:7.3.0
     container_name: kafka
@@ -19,8 +24,150 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_MESSAGE_MAX_BYTES: 10485760 # 10 MB
-      KAFKA_REPLICA_FETCH_MAX_BYTES: 10485760 # 10 MB
-      KAFKA_FETCH_MAX_BYTES: 10485760 # 10 MB
+      KAFKA_MESSAGE_MAX_BYTES: 10485760
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 10485760
+      KAFKA_FETCH_MAX_BYTES: 10485760
+    networks:
+      - connectedu-net
+
+  # 3. SERVICE REGISTRY
+  service-registry:
+    build: ./service-registry
+    container_name: service-registry
+    ports:
+      - "8761:8761"
+    networks:
+      - connectedu-net
+
+  # 4. API GATEWAY
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
+    depends_on:
+      - service-registry
+    networks:
+      - connectedu-net
+
+  # 5. USER SERVICE
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
+      - SPRING_KAFKA_PRODUCER_BOOTSTRAPSERVERS=kafka:29092
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/user
+    depends_on:
+      - service-registry
+      - kafka
+    networks:
+      - connectedu-net
+
+  # 6. CLUB SERVICE
+  club-service:
+    build: ./club-service
+    container_name: club-service
+    ports:
+      - "8082:8082"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
+      - SPRING_KAFKA_PRODUCER_BOOTSTRAPSERVERS=kafka:29092
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/club
+    depends_on:
+      - service-registry
+      - kafka
+    networks:
+      - connectedu-net
+
+  # 7. EVENT SERVICE
+  event-service:
+    build: ./event-service
+    container_name: event-service
+    ports:
+      - "8083:8083"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
+      - SPRING_KAFKA_PRODUCER_BOOTSTRAPSERVERS=kafka:29092
+      - SPRING_KAFKA_CONSUMER_BOOTSTRAPSERVERS=kafka:29092
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/event
+    depends_on:
+      - service-registry
+      - kafka
+    networks:
+      - connectedu-net
+
+  # 8. DISCUSSION SERVICE
+  discussion-service:
+    build: ./discussion-service
+    container_name: discussion-service
+    ports:
+      - "8084:8084"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/discussion
+    depends_on:
+      - service-registry
+    networks:
+      - connectedu-net
+
+  # 9. NOTIFICATION SERVICE
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    ports:
+      - "8085:8085"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
+      - SPRING_KAFKA_CONSUMER_BOOTSTRAPSERVERS=kafka:29092
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/notification
+    depends_on:
+      - service-registry
+      - kafka
+    networks:
+      - connectedu-net
+
+  # 10. CERTIFICATE SERVICE
+  certificate-service:
+    build: ./certification-service
+    container_name: certificate-service
+    ports:
+      - "8086:8086"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
+      - SPRING_KAFKA_PRODUCER_BOOTSTRAPSERVERS=kafka:29092
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/certificate
+    depends_on:
+      - service-registry
+      - kafka
+    networks:
+      - connectedu-net
+
+  # 11. PAYMENT SERVICE
+  payment-service:
+    build: ./razorpay-payment-service
+    container_name: payment-service
+    ports:
+      - "8088:8088"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
+      - SPRING_KAFKA_PRODUCER_BOOTSTRAPSERVERS=kafka:29092
+    depends_on:
+      - service-registry
+      - kafka
+    networks:
+      - connectedu-net
+
+# Define the custom network that all services will share
+networks:
+  connectedu-net:
+    driver: bridge

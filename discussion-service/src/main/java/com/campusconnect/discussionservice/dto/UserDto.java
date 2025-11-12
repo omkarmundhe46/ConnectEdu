@@ -12,4 +12,5 @@ public class UserDto {
     private String department;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
 }

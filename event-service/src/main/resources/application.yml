@@ -46,3 +46,4 @@ CLUB_SERVICE_URL: http://localhost:8082
 EVENT_SERVICE_URL: http://localhost:8083
 NOTIFICATION_SERVICE_URL: http://localhost:8085
 CERTIFICATE_SERVICE_URL: http://localhost:8086
+DISCUSSION_SERVICE_URL: http://localhost:8084

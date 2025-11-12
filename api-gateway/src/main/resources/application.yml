@@ -22,6 +22,10 @@ spring:
           predicates:
             - Path=/auth/**, /api/users/**, /internal/api/users/**, /oauth2/**, /login/oauth2/**, /login
 
+        - id: discussion-service-websocket
+          uri: lb:ws://discussion-service # Note: 'lb:ws://'
+          predicates:
+            - Path=/ws/**
 
         - id: upload-service
           uri: lb://discussion-service
@@ -32,7 +36,7 @@ spring:
         - id: discussion-service
           uri: lb://discussion-service
           predicates:
-            - Path=/api/clubs/{clubId}/events/{eventId}/discussions/**
+            - Path=/api/clubs/{clubId}/events/{eventId}/discussions/**, /internal/api/discussions/**
 
 
         - id: event-service
