@@ -162,7 +162,18 @@ public class ClubService {
     }
 
     public boolean isMember(Long clubId, Long userId) {
-        return clubMemberRepository.existsByClubIdAndUserId(clubId, userId);
+
+        // 1. First, check if they are in the club_members table
+        boolean isListedMember = clubMemberRepository.existsByClubIdAndUserId(clubId, userId);
+        if (isListedMember) {
+            return true;
+        }
+
+        // 2. If not, check if they are the admin of the club
+        Club club = clubRepository.findById(clubId)
+                .orElseThrow(() -> new ClubNotFoundException("Club not found with id: " + clubId));
+
+        return club.getAdminId().equals(userId);
     }
 
     public String getMemberRole(Long clubId, Long userId) {
