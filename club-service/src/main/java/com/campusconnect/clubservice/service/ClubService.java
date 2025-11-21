@@ -114,10 +114,11 @@ public class ClubService {
     }
 
     public ClubMemberResponseDto addMemberToClub(Long clubId, ClubMemberRequestDto memberRequestDto) {
-        if (!clubRepository.existsById(clubId)) {
-            throw new ClubNotFoundException("Club not found with id: " + clubId);
-        }
-        // 1. Validate user exists by email
+        // 1. Fetch the Club object (We need it to check the admin ID)
+        Club club = clubRepository.findById(clubId)
+                .orElseThrow(() -> new ClubNotFoundException("Club not found with id: " + clubId));
+
+        // 2. Validate user exists by email
         UserDto user;
         try {
             user = userClient.getUserByEmail(memberRequestDto.getUserEmail());
@@ -125,7 +126,12 @@ public class ClubService {
             throw new UserNotFoundException("User not found with email: " + memberRequestDto.getUserEmail());
         }
 
-        // 2. Use the found user's ID for checks and saving
+        // --- 3. NEW CHECK: Is this user the Admin of the club? ---
+        if (club.getAdminId().equals(user.getId())) {
+            throw new DuplicateMembershipException("This user is the Club Admin and cannot be added as a member.");
+        }
+
+        // 4. Check if user is already a member
         if (clubMemberRepository.existsByClubIdAndUserId(clubId, user.getId())) {
             throw new DuplicateMembershipException("User already member of this club");
         }
@@ -137,7 +143,7 @@ public class ClubService {
 
         ClubMember savedMember = clubMemberRepository.save(member);
 
-        // --- AUTOMATIC ROLE PROMOTION ---
+        // 5. Promote role
         UpdateUserRoleRequest roleRequest = new UpdateUserRoleRequest(Role.CLUB_MEMBER, null);
         userClient.updateUserRole(savedMember.getUserId(), roleRequest);
 
@@ -148,17 +154,40 @@ public class ClubService {
         if (!clubRepository.existsById(clubId)) {
             throw new ClubNotFoundException("Club not found with id: " + clubId);
         }
-        
-        return clubMemberRepository.findByClubId(clubId).stream()
-                .map(this::mapToMemberResponseDto)
-                .collect(Collectors.toList());
+
+        List<ClubMember> members = clubMemberRepository.findByClubId(clubId);
+        return members.stream().map(member -> {
+            ClubMemberResponseDto dto = mapToMemberResponseDto(member);
+            // Fetch user details for each member
+            try {
+                // Ideally, this should be a batch call, but single calls work for now
+                UserDto user = userClient.getUserById(member.getUserId());
+                dto.setUserName(user.getName());
+            } catch (Exception e) {
+                dto.setUserName("Unknown User (ID: " + member.getUserId() + ")");
+            }
+            return dto;
+        }).collect(Collectors.toList());
     }
 
+    // --- removeMemberFromClub ---
     public void removeMemberFromClub(Long clubId, Long userId) {
         ClubMember member = clubMemberRepository.findByClubIdAndUserId(clubId, userId)
                 .orElseThrow(() -> new MembershipNotFoundException("Membership not found for club: " + clubId + " and user: " + userId));
-        
+
+        // 1. Remove from club_members table
         clubMemberRepository.delete(member);
+
+        // 2. Demote user role back to USER
+        // We wrap this in a try-catch so the removal succeeds even if the user-service is down
+        try {
+            // Note: We pass null for managedClubId because they are now just a USER
+            UpdateUserRoleRequest roleRequest = new UpdateUserRoleRequest(Role.USER, null);
+            userClient.updateUserRole(userId, roleRequest);
+        } catch (Exception e) {
+            // Log error but don't fail the transaction
+            System.err.println("Failed to demote user role for user " + userId + ": " + e.getMessage());
+        }
     }
 
     public boolean isMember(Long clubId, Long userId) {

@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 public class ClubMemberResponseDto {
     private Long id;
     private Long userId;
+    private String userName;
     private Long clubId;
     private ClubMember.Role role;
     private LocalDateTime joinedAt;
