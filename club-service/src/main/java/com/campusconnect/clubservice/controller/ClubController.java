@@ -39,6 +39,24 @@ public class ClubController {
 		return new ResponseEntity<>(createdClub, HttpStatus.CREATED);
 	}
 
+	@GetMapping("/my-memberships")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<List<Long>> getMyClubIds() {
+		Long userId = getAuthenticatedUserId(); // Use your existing helper method
+		return ResponseEntity.ok(clubService.getMyClubIds(userId));
+	}
+
+	private Long getAuthenticatedUserId() {
+		// ... (your standard JWT extraction logic) ...
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		Jwt jwt = (Jwt) authentication.getPrincipal();
+		Object userIdObj = jwt.getClaim("userId");
+		if (userIdObj instanceof Number) {
+			return ((Number) userIdObj).longValue();
+		}
+		throw new IllegalStateException("User ID not found.");
+	}
+
 	@GetMapping
 	@PreAuthorize("isAuthenticated()") // Any authenticated user can view clubs
 	public ResponseEntity<List<ClubResponseDto>> getAllClubs() {

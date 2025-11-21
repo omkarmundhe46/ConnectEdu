@@ -2,6 +2,7 @@ package com.campusconnect.userservice.service;
 
 import com.campusconnect.userservice.config.JwtService;
 import com.campusconnect.userservice.dto.*;
+import com.campusconnect.userservice.entity.ClubMembership;
 import com.campusconnect.userservice.entity.Role; // ADDED
 import com.campusconnect.userservice.entity.User;
 import com.campusconnect.userservice.entity.VerificationToken;
@@ -136,6 +137,11 @@ public class UserService {
         dto.setProfileImageUrl(user.getProfileImageUrl());
         dto.setCreatedAt(user.getCreatedAt());
         dto.setUpdatedAt(user.getUpdatedAt());
+        if (user.getClubMemberships() != null) {
+            dto.setJoinedClubIds(user.getClubMemberships().stream()
+                    .map(ClubMembership::getClubId)
+                    .collect(Collectors.toList()));
+        }
         return dto;
     }
 

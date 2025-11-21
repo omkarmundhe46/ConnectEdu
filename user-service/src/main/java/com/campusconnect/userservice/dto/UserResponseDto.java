@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -22,4 +23,5 @@ public class UserResponseDto {
     private LocalDateTime updatedAt;
     private String phone;
     private String profileImageUrl;
+    private List<Long> joinedClubIds;
 }

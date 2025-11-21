@@ -150,6 +150,12 @@ public class ClubService {
         return mapToMemberResponseDto(savedMember);
     }
 
+    public List<Long> getMyClubIds(Long userId) {
+        return clubMemberRepository.findByUserId(userId).stream()
+                .map(ClubMember::getClubId)
+                .collect(Collectors.toList());
+    }
+
     public List<ClubMemberResponseDto> getClubMembers(Long clubId) {
         if (!clubRepository.existsById(clubId)) {
             throw new ClubNotFoundException("Club not found with id: " + clubId);

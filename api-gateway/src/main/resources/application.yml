@@ -48,7 +48,7 @@ spring:
         - id: club-service
           uri: lb://club-service
           predicates:
-            - Path=/api/clubs/**, /internal/api/clubs/**
+            - Path=/api/clubs/**, /internal/api/clubs/**, /api/banners/**
 
 
         - id: certificate-service
