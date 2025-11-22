@@ -68,6 +68,36 @@ public class AuthController {
     }
 
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            userService.initiatePasswordReset(request.getEmail());
+            return ResponseEntity.ok("OTP sent to email.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/verify-reset-otp")
+    public ResponseEntity<String> verifyResetOtp(@RequestBody VerifyOtpRequest request) {
+        try {
+            // Reuse VerifyOtpRequest DTO since it has email and otp fields
+            userService.verifyOtpForReset(request.getEmail(), request.getOtp());
+            return ResponseEntity.ok("OTP is valid.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/reset-password-with-otp")
+    public ResponseEntity<String> resetPasswordWithOtp(@RequestBody ResetPasswordRequest request) {
+        try {
+            userService.completePasswordReset(request);
+            return ResponseEntity.ok("Password reset successful.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
 
     /**

@@ -124,4 +124,16 @@ public class KafkaConsumerConfig {
         factory.setConsumerFactory(emailVerificationConsumerFactory());
         return factory;
     }
+   //  For Forget Password
+    @Bean
+    public ConsumerFactory<String, PasswordResetEmailRequest> passwordResetConsumerFactory() {
+        return new DefaultKafkaConsumerFactory<>(consumerConfigs(PasswordResetEmailRequest.class));
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, PasswordResetEmailRequest> passwordResetListenerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, PasswordResetEmailRequest> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(passwordResetConsumerFactory());
+        return factory;
+    }
 }

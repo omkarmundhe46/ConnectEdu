@@ -252,4 +252,71 @@ public class UserService {
 
         log.info("User {} successfully changed their password.", user.getEmail());
     }
+
+    @Transactional
+    public void initiatePasswordReset(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+
+        // Security Check: Cannot reset password for Google/Facebook users
+        if (!"local".equals(user.getProvider())) {
+            throw new IllegalArgumentException("This account uses " + user.getProvider() + " login. You cannot reset the password here.");
+        }
+
+        // Reuse existing logic to create/update the token
+        String otp = createVerificationToken(user);
+
+        // Send Kafka message
+        PasswordResetEmailRequest request = PasswordResetEmailRequest.builder()
+                .email(user.getEmail())
+                .name(user.getName())
+                .otp(otp)
+                .build();
+        userKafkaProducer.sendPasswordResetEmail(request);
+    }
+
+    @Transactional
+    public void completePasswordReset(ResetPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + request.getEmail()));
+
+        VerificationToken token = tokenRepository.findByOtp(request.getOtp())
+                .orElseThrow(() -> new RuntimeException("Invalid OTP."));
+
+        // Validate Token
+        if (!token.getUser().equals(user)) {
+            throw new RuntimeException("Invalid OTP for this user.");
+        }
+        if (token.getExpiryTime().isBefore(LocalDateTime.now())) {
+            tokenRepository.delete(token);
+            throw new RuntimeException("OTP has expired.");
+        }
+
+        // Update Password
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Delete the used token
+        tokenRepository.delete(token);
+
+        log.info("Password successfully reset for user {}", user.getEmail());
+    }
+
+    public void verifyOtpForReset(String email, String otp) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+
+        VerificationToken token = tokenRepository.findByOtp(otp)
+                .orElseThrow(() -> new RuntimeException("Invalid OTP."));
+
+        if (!token.getUser().equals(user)) {
+            throw new RuntimeException("Invalid OTP for this email.");
+        }
+
+        if (token.getExpiryTime().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("OTP has expired. Please request a new one.");
+        }
+
+    }
+
 }

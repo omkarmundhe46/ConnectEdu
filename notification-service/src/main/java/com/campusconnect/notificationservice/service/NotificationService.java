@@ -131,6 +131,33 @@ public class NotificationService {
 		}
 	}
 
+	public void sendPasswordResetEmail(PasswordResetEmailRequest request) {
+		log.info("Preparing password reset email for: {}", request.getEmail());
+
+		try {
+			String subject = "Reset your ConnectEdu Password";
+			String body = "<h1>Hello " + request.getName() + ",</h1>"
+					+ "<p>You requested to reset your password. Use this code:</p>"
+					+ "<h2 style='color: #FF5722;'>" + request.getOtp() + "</h2>"
+					+ "<p>This code is valid for 10 minutes.</p>"
+					+ "<p>If you did not request this, please ignore this email.</p>";
+
+			NotificationLog logEntry = new NotificationLog();
+			logEntry.setToEmail(request.getEmail());
+			logEntry.setSubject(subject);
+			logEntry.setBody(body);
+
+			NotificationLog savedLog = logRepository.save(logEntry);
+
+			// Send the email asynchronously
+			emailSenderService.sendEmailAsync(savedLog);
+			log.info("✅ Password reset email enqueued for {}", request.getEmail());
+
+		} catch (Exception e) {
+			log.error("❌ Failed to send password reset email: {}", e.getMessage(), e);
+		}
+	}
+
 	/**
 	 * Notify a user when they participate in an event
 	 */
