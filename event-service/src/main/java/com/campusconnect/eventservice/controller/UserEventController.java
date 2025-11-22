@@ -1,5 +1,6 @@
 package com.campusconnect.eventservice.controller;
 
+import com.campusconnect.eventservice.dto.EventResponseDto;
 import com.campusconnect.eventservice.dto.MyRegistrationResponseDto;
 import com.campusconnect.eventservice.service.EventService;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,12 @@ public class UserEventController {
         Long userId = getAuthenticatedUserId();
         List<MyRegistrationResponseDto> registrations = eventService.getRegistrationsForUser(userId);
         return ResponseEntity.ok(registrations);
+    }
+
+    @GetMapping("/upcoming")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<EventResponseDto>> getAllUpcomingEvents() {
+        return ResponseEntity.ok(eventService.getAllUpcomingEvents());
     }
 
     // --- Helper Method (Copied from EventController) ---
