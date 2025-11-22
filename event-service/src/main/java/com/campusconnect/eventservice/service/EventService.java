@@ -96,6 +96,12 @@ public class EventService {
         return mapToEventResponseDto(updatedEvent);
     }
 
+    public List<EventResponseDto> searchEvents(String query) {
+        return eventRepository.findByNameContainingIgnoreCase(query).stream()
+                .map(this::mapToEventResponseDto)
+                .collect(Collectors.toList());
+    }
+
     public void deleteClubEvent(Long clubId, Long eventId) {
         Event event = eventRepository.findByIdAndClubId(eventId, clubId)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + eventId + " for club: " + clubId));

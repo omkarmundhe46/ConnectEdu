@@ -46,6 +46,16 @@ public class ClubController {
 		return ResponseEntity.ok(clubService.getMyClubIds(userId));
 	}
 
+	@GetMapping("/search")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<List<ClubResponseDto>> searchClubs(@RequestParam("query") String query) {
+		// We can call the repository directly here for simplicity,
+		// or add a method in ClubService. Let's use the repository via service for cleaner code.
+		// But since we didn't update Service, let's stick to the logic here or assume Service update.
+
+		return ResponseEntity.ok(clubService.searchClubs(query));
+	}
+
 	private Long getAuthenticatedUserId() {
 		// ... (your standard JWT extraction logic) ...
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

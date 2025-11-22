@@ -156,6 +156,12 @@ public class ClubService {
                 .collect(Collectors.toList());
     }
 
+    public List<ClubResponseDto> searchClubs(String query) {
+        return clubRepository.findByNameContainingIgnoreCase(query).stream()
+                .map(this::mapToResponseDto)
+                .collect(Collectors.toList());
+    }
+
     public List<ClubMemberResponseDto> getClubMembers(Long clubId) {
         if (!clubRepository.existsById(clubId)) {
             throw new ClubNotFoundException("Club not found with id: " + clubId);
