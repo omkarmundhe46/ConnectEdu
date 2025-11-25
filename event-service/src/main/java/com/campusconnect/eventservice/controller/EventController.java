@@ -77,10 +77,12 @@ public class EventController {
     }
 
 
-    public ResponseEntity<List<ParticipantResponseDto>> getEventParticipants(@PathVariable Long clubId, @PathVariable Long eventId) {
-        if (isClubAdmin()) {
-            validateClubOwnership(clubId);
-        }
+    @GetMapping("/{clubId}/events/{eventId}/participants")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<ParticipantResponseDto>> getEventParticipants(
+            @PathVariable Long clubId,
+            @PathVariable Long eventId) {
+
         List<ParticipantResponseDto> participants = eventService.getEventParticipants(clubId, eventId);
         return ResponseEntity.ok(participants);
     }

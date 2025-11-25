@@ -21,9 +21,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,7 +38,7 @@ public class EventService {
     private final ClubClient clubClient;
     private final EventKafkaProducer eventKafkaProducer;
     private final UserClient userClient;
-    private final PaymentClient paymentClient; // Inject the new client
+    private final PaymentClient paymentClient;
     private final CertificateClient certificateClient;
 
     public EventResponseDto createClubEvent(Long clubId, EventRequestDto eventRequestDto) {
@@ -133,8 +135,40 @@ public class EventService {
         Event event = eventRepository.findByIdAndClubId(eventId, clubId)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + eventId + " for club: " + clubId));
 
-        return participantRepository.findByEventId(eventId).stream()
-                .map(this::mapToParticipantResponseDto)
+        // 2. Get Participants from DB
+        List<EventParticipant> participants = participantRepository.findByEventId(eventId);
+        if (participants.isEmpty()) {
+            return List.of();
+        }
+
+        // 3. Collect User IDs
+        List<Long> userIds = participants.stream()
+                .map(EventParticipant::getUserId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 4. Fetch User Details from user-service (Batch Call)
+        Map<Long, UserDto> userMap;
+        try {
+            userMap = userClient.getUsersByIds(userIds).stream()
+                    .collect(Collectors.toMap(UserDto::getId, Function.identity()));
+        } catch (Exception e) {
+            log.error("Failed to fetch user details for participants", e);
+            userMap = Map.of(); // Fallback to empty map if user-service fails
+        }
+
+        // 5. Map to DTO with Profile Image
+        Map<Long, UserDto> finalUserMap = userMap;
+        return participants.stream()
+                .map(p -> {
+                    ParticipantResponseDto dto = mapToParticipantResponseDto(p);
+                    // Enrich with profile image
+                    UserDto user = finalUserMap.get(p.getUserId());
+                    if (user != null) {
+                        dto.setProfileImageUrl(user.getProfileImageUrl());
+                    }
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 

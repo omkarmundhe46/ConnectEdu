@@ -14,4 +14,5 @@ public class ParticipantResponseDto {
     private String mobileNumber;
     private String address;
     private String paymentId;
+    private String profileImageUrl;
 }

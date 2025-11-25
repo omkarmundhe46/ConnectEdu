@@ -15,6 +15,11 @@ public interface UserClient {
     @GetMapping("/{id}")
     UserDto getUserById(@PathVariable("id") Long id);
 
-    @PostMapping("/batch")
+//    @PostMapping("/batch")
+//    List<UserDto> getUsersByIds(@RequestBody List<Long> userIds);
+
+    @PostMapping("/internal/api/users/batch")
     List<UserDto> getUsersByIds(@RequestBody List<Long> userIds);
+
+
 }
