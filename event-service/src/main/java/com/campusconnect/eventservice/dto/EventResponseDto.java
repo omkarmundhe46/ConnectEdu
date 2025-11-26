@@ -16,6 +16,7 @@ public class EventResponseDto {
     private LocalDateTime updatedAt;
     private String meetingLink;
     private String imageUrl;
+    private Double fee;
     private String status;
     private String contactName1;
     private String contactPhone1;

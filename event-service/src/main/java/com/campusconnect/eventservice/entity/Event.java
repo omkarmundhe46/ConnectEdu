@@ -32,6 +32,9 @@ public class Event {
     private LocalDateTime date;
 
     @Column(nullable = false)
+    private Double fee = 0.0;
+
+    @Column(nullable = false)
     private String location;
 
     @Column(name = "image_url") // New column for the banner image URL

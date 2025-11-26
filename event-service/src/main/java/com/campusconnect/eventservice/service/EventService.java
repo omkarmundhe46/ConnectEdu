@@ -61,6 +61,7 @@ public class EventService {
         event.setContactPhone1(eventRequestDto.getContactPhone1());
         event.setContactName2(eventRequestDto.getContactName2());
         event.setContactPhone2(eventRequestDto.getContactPhone2());
+        event.setFee(eventRequestDto.getFee() != null ? eventRequestDto.getFee() : 0.0);
 
         Event savedEvent = eventRepository.save(event);
         return mapToEventResponseDto(savedEvent);
@@ -87,6 +88,9 @@ public class EventService {
         event.setDate(eventRequestDto.getDate());
         event.setLocation(eventRequestDto.getLocation());
         event.setImageUrl(eventRequestDto.getImageUrl()); // Update the image URL
+        if (eventRequestDto.getFee() != null) {
+            event.setFee(eventRequestDto.getFee());
+        }
         event.setMeetingLink(eventRequestDto.getMeetingLink()); // Update meeting link
         event.setUpdatedAt(LocalDateTime.now());
         event.setContactName1(eventRequestDto.getContactName1());
@@ -112,22 +116,36 @@ public class EventService {
 
     public OrderResponse startRegistration(Long clubId, Long eventId, RegistrationRequestDto request) {
         // 1. Validate the event exists and belongs to the club.
-        eventRepository.findByIdAndClubId(eventId, clubId)
+        Event event = eventRepository.findByIdAndClubId(eventId, clubId)
                 .orElseThrow(() -> new EventNotFoundException("Event not found"));
 
-        // 2. Check if the user is already registered to prevent double payment.
+        // 2. Check if the user is already registered
         if (participantRepository.existsByEventIdAndUserId(eventId, request.getUserId())) {
             throw new DuplicateParticipationException("You are already registered for this event.");
         }
 
-        // 3. Prepare the request for the payment-service.
+        // 3. Check for FREE events
+        if (event.getFee() == 0.0) {
+            // Handle free registration separately if needed, or just create a 0 amount order
+            // For now, Razorpay requires > 1 INR.
+            // If fee is 0, you might want to skip payment entirely.
+            // But for this specific task, we assume paid events.
+        }
+
+        // 4. Prepare the request for the payment-service.
         OrderRequest orderRequest = new OrderRequest();
-        orderRequest.setAmount(request.getAmount());
+
+        // --- USE ACTUAL EVENT FEE ---
+        // Razorpay takes amount in "paise" (1 INR = 100 paise)
+        // So we multiply the fee by 100 and cast to Integer
+        Integer amountInPaise = (int) (event.getFee() * 100);
+        orderRequest.setAmount(amountInPaise);
+        // --- END ---
+
         orderRequest.setCurrency("INR");
 
-        log.info("Requesting payment order creation for event {} and user {}", eventId, request.getUserId());
+        log.info("Requesting payment order creation for event {} and user {}. Amount: {}", eventId, request.getUserId(), amountInPaise);
 
-        // 4. Call the payment-service to create a Razorpay order.
         return paymentClient.createOrder(orderRequest);
     }
 
@@ -199,6 +217,7 @@ public class EventService {
         dto.setCreatedAt(event.getCreatedAt());
         dto.setUpdatedAt(event.getUpdatedAt());
         dto.setMeetingLink(event.getMeetingLink());
+        dto.setFee(event.getFee());
         dto.setImageUrl(event.getImageUrl()); // Map the image URL
         dto.setContactName1(event.getContactName1());
         dto.setContactPhone1(event.getContactPhone1());

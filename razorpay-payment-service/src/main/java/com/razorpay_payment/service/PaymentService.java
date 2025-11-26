@@ -43,38 +43,7 @@ public class PaymentService {
                 .build();
     }
 
-    // real verification
-//    public boolean verifyPayment(PaymentVerificationRequest request) {
-//        try {
-//            JSONObject options = new JSONObject();
-//            options.put("razorpay_order_id", request.getRazorpayOrderId());
-//            options.put("razorpay_payment_id", request.getRazorpayPaymentId());
-//            options.put("razorpay_signature", request.getRazorpaySignature());
-//
-//            // This is the digital handshake to confirm the payment is real
-//            boolean isValid = Utils.verifyPaymentSignature(options, keySecret);
-//
-//            if (isValid) {
-//                log.info("Payment verification successful for order: {}", request.getRazorpayOrderId());
-//                // If valid, send a confirmation message to Kafka
-//                PaymentSuccessfulEvent event = PaymentSuccessfulEvent.builder()
-//                        .paymentId(request.getRazorpayPaymentId())
-//                        .registrationData(request.getRegistrationData())
-//                        .build();
-//                kafkaProducer.sendPaymentSuccessEvent(event);
-//            } else {
-//                log.warn("Payment verification failed for order: {}", request.getRazorpayOrderId());
-//            }
-//            return isValid;
-//        } catch (RazorpayException e) {
-//            log.error("Error verifying payment signature: {}", e.getMessage());
-//            return false;
-//        }
-//    }
-
-
-    // for testing
-    // ... inside your verifyPayment method ...
+    // REAL VERIFICATION ---
     public boolean verifyPayment(PaymentVerificationRequest request) {
         try {
             JSONObject options = new JSONObject();
@@ -82,29 +51,25 @@ public class PaymentService {
             options.put("razorpay_payment_id", request.getRazorpayPaymentId());
             options.put("razorpay_signature", request.getRazorpaySignature());
 
-            // --- TEMPORARY CHANGE FOR TESTING ---
-            // Comment out the real verification
-            // boolean isValid = Utils.verifyPaymentSignature(options, keySecret);
 
-            // Force the verification to be true for your test
-            boolean isValid = true;
+            // Use the Razorpay Utils to cryptographically verify the signature
+            boolean isValid = Utils.verifyPaymentSignature(options, keySecret);
 
             if (isValid) {
                 log.info("Payment verification successful for order: {}", request.getRazorpayOrderId());
-                // This will now send the Kafka message
                 PaymentSuccessfulEvent event = PaymentSuccessfulEvent.builder()
                         .paymentId(request.getRazorpayPaymentId())
                         .registrationData(request.getRegistrationData())
                         .build();
                 kafkaProducer.sendPaymentSuccessEvent(event);
             } else {
-                // This 'else' block will be skipped during your test
                 log.warn("Payment verification failed for order: {}", request.getRazorpayOrderId());
             }
             return isValid;
-        } catch (Exception e) {
+        } catch (RazorpayException e) {
             log.error("Error verifying payment signature: {}", e.getMessage());
             return false;
         }
     }
+
 }
