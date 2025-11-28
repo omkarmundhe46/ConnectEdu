@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 9.0.3.final using JasperReports Library version 6.21.6-ef58807af469abb082e2f734b1e78a3c47daad18  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Blank_Letter_Landscape" pageWidth="792" pageHeight="520" orientation="Landscape" columnWidth="752" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="b5c51030-900f-4416-ac92-29af850a4aeb">
+	<property name="com.jaspersoft.studio.unit." value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.pageHeight" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.pageWidth" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.topMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.bottomMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.leftMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.rightMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.columnWidth" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.columnSpacing" value="pixel"/>
+	<parameter name="userName" class="java.lang.String"/>
+	<parameter name="eventName" class="java.lang.String"/>
+	<parameter name="eventDate" class="java.lang.String"/>
+	<parameter name="backgroundImage" class="java.io.InputStream"/>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="79" splitType="Stretch"/>
+	</title>
+	<pageHeader>
+		<band height="35" splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="61" splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="300" splitType="Stretch">
+			<image scaleImage="FillFrame">
+				<reportElement x="0" y="-175" width="750" height="475" uuid="df8156bf-5ebf-4198-8ed4-f4e78e523275"/>
+				<imageExpression><![CDATA[$P{backgroundImage}]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="190" y="30" width="460" height="79" uuid="2fc4bd4c-619c-4247-9402-c117364252c1"/>
+				<textElement>
+					<font fontName="SansSerif" size="45"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{userName}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="260" y="109" width="190" height="20" uuid="adda8f5b-dddf-4b15-a56d-e40604852d98"/>
+				<textElement>
+					<font fontName="SansSerif" size="17"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{eventName}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="110" y="130" width="110" height="20" uuid="d704aba1-9d46-48d2-a02c-44c8e4daf3f8"/>
+				<textElement>
+					<font fontName="SansSerif" size="17"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{eventDate}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

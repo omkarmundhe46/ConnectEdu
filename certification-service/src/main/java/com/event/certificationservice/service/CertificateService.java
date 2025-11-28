@@ -1,12 +1,16 @@
 package com.event.certificationservice.service;
 
+import com.event.certificationservice.dto.CertificateConfigDto;
 import com.event.certificationservice.dto.CertificateNotificationRequest;
 import com.event.certificationservice.dto.EventResponseDto;
 import com.event.certificationservice.dto.UserResponseDto;
 import com.event.certificationservice.entity.Certificate;
+import com.event.certificationservice.entity.EventCertificateConfig;
+import com.event.certificationservice.enums.CertificateTemplateType;
 import com.event.certificationservice.repository.CertificateRepository;
 import com.event.certificationservice.client.UserClient;
 import com.event.certificationservice.client.EventClient;
+import com.event.certificationservice.repository.EventCertificateConfigRepository;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,17 +40,43 @@ public class CertificateService {
 //    private final NotificationClient notificationClient;
     private final CertificateKafkaProducer certificateKafkaProducer;
     private final S3StorageService s3StorageService; // Inject the new service
+    private final EventCertificateConfigRepository configRepository; // INJECT
+
+    public void saveConfig(Long eventId, CertificateTemplateType templateType) {
+        EventCertificateConfig config = configRepository.findByEventId(eventId)
+                .orElse(new EventCertificateConfig());
+        config.setEventId(eventId);
+        config.setTemplateType(templateType);
+        configRepository.save(config);
+    }
+
+    // --- NEW: GET CONFIGURATION ---
+    public EventCertificateConfig getConfig(Long eventId) {
+        return configRepository.findByEventId(eventId).orElse(null);
+    }
 
     /**
-     * Generate PDF bytes using JasperReports.
+     * Generate PDF bytes using JasperReports with DYNAMIC TEMPLATE.
      */
     public byte[] generateCertificatePdf(Long eventId, Long userId) throws JRException {
         try {
             UserResponseDto user = userClient.getUserById(userId);
             EventResponseDto event = eventClient.getEventById(eventId);
 
-            ClassPathResource jrxmlRes = new ClassPathResource("certi/certificate.jrxml");
-            try (InputStream jrxmlStream = jrxmlRes.getInputStream()) {
+            // 1. Get Config
+            EventCertificateConfig config = configRepository.findByEventId(eventId)
+                    .orElseThrow(() -> new RuntimeException("No certificate template selected for event " + eventId));
+
+            CertificateTemplateType template = config.getTemplateType();
+
+            // 2. LOAD TEMPLATE FILES
+// The Enum already contains the full path (e.g., "certificates/...")
+            ClassPathResource jrxmlRes = new ClassPathResource(template.getJrxmlPath());
+            ClassPathResource bgRes = new ClassPathResource(template.getBackgroundPath());
+
+            try (InputStream jrxmlStream = jrxmlRes.getInputStream();
+                 InputStream bgStream = bgRes.getInputStream()) {
+
                 JasperReport jasperReport = JasperCompileManager.compileReport(jrxmlStream);
 
                 Map<String, Object> params = new HashMap<>();
@@ -53,25 +84,14 @@ public class CertificateService {
                 params.put("eventName", event.getName());
                 params.put("eventDate", event.getDate().toString());
 
-                // Images from resources (must exist under src/main/resources/certi/images/)
-                params.put("backgroundImage", getResourceStream("certi/images/x.png"));
-                params.put("logoImage", getResourceStream("certi/images/clg_logo_White.png"));
-                params.put("aImage", getResourceStream("certi/images/A.png"));
-                params.put("signatureImage1", getResourceStream("certi/images/sign1.png"));
-                params.put("signatureImage2", getResourceStream("certi/images/sign2.png"));
-                params.put("signatureImage3", getResourceStream("certi/images/sign3.png"));
-                params.put("signatureImage4", getResourceStream("certi/images/sign4.png"));
+                // Pass the background image stream
+                params.put("backgroundImage", bgStream);
 
                 JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, new JREmptyDataSource());
-                byte[] pdfBytes = JasperExportManager.exportReportToPdf(jasperPrint);
-                return pdfBytes;
+                return JasperExportManager.exportReportToPdf(jasperPrint);
             }
-        } catch (FeignException.NotFound nf) {
-            log.error("Dependent resource not found: {}", nf.getMessage());
-            throw new RuntimeException("User or Event not found", nf);
-        } catch (Exception e) {
-            log.error("Certificate generation failed", e);
-            throw new RuntimeException("Certificate generation failed: " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load template files", e);
         }
     }
 

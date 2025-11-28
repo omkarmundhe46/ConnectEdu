@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 9.0.3.final using JasperReports Library version 6.21.6-ef58807af469abb082e2f734b1e78a3c47daad18  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Blank_Letter_Landscape_1" pageWidth="799" pageHeight="536" orientation="Landscape" columnWidth="759" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="ce79c00d-a361-4c8b-907b-ff25db75fe0c">
+	<parameter name="userName" class="java.lang.String"/>
+	<parameter name="eventName" class="java.lang.String"/>
+	<parameter name="eventDate" class="java.lang.String"/>
+	<parameter name="backgroundImage" class="java.io.InputStream"/>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<background>
+		<band height="490" splitType="Stretch">
+			<image scaleImage="FillFrame">
+				<reportElement x="0" y="0" width="760" height="490" uuid="8c0a1770-c060-4867-98d7-d17bddf4d025">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<imageExpression><![CDATA[$P{backgroundImage}]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="330" y="260" width="180" height="25" uuid="ea140558-d2f9-4532-962f-3522538b88a7"/>
+				<textElement>
+					<font size="18"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{userName}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="160" y="287" width="190" height="24" uuid="31c9f859-4514-4c7f-b988-c8d4766a0a35"/>
+				<textElement>
+					<font size="18"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{eventName}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="480" y="287" width="140" height="26" uuid="10cd69d2-8e4d-4888-bf9b-8defd0e97cbb"/>
+				<textElement>
+					<font size="18"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{eventDate}]]></textFieldExpression>
+			</textField>
+		</band>
+	</background>
+</jasperReport>
