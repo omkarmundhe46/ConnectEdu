@@ -32,6 +32,11 @@ public class Club {
     @Column(nullable = false)
     private Long adminId;
 
+    // Values could be: "CODING", "SPORTS", "CULTURAL", "Arts", etc.
+    @Column(name = "category")
+    private String category;
+
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

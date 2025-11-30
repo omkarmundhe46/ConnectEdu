@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -20,8 +21,19 @@ public class CertificateConfigController {
     private final CertificateService certificateService;
 
     @GetMapping("/templates")
-    public ResponseEntity<List<CertificateTemplateType>> getTemplates() {
-        return ResponseEntity.ok(Arrays.asList(CertificateTemplateType.values()));
+    public ResponseEntity<List<CertificateTemplateType>> getTemplates(@RequestParam(required = false) String category) {
+
+        // If no category is sent, return everything (or just generics)
+        if (category == null || category.isEmpty()) {
+            return ResponseEntity.ok(Arrays.asList(CertificateTemplateType.values()));
+        }
+
+        // Filter the Enum values based on the category
+        List<CertificateTemplateType> filtered = Arrays.stream(CertificateTemplateType.values())
+                .filter(t -> t.getCategory().equalsIgnoreCase(category) || t.getCategory().equalsIgnoreCase("ALL"))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(filtered);
     }
 
     // 3. Get configuration for an event (to pre-fill the form)

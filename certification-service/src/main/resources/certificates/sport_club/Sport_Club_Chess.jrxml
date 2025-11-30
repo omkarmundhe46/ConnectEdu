@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 9.0.3.final using JasperReports Library version 6.21.6-ef58807af469abb082e2f734b1e78a3c47daad18  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Blank_Letter_Landscape_1" pageWidth="773" pageHeight="504" orientation="Landscape" columnWidth="733" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="6364d1a0-f1ab-4e8d-be98-7df98e0d0217">
+	<parameter name="userName" class="java.lang.String"/>
+	<parameter name="eventName" class="java.lang.String"/>
+	<parameter name="eventDate" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<background>
+		<band height="440">
+			<image scaleImage="FillFrame">
+				<reportElement x="0" y="0" width="730" height="440" uuid="ae00cdd2-199b-4aa9-af76-a8bfe0bad6ee"/>
+				<imageExpression><![CDATA["C:\\Users\\omkar\\JaspersoftWorkspace\\clubs\\Sport_Club_Chesss.png"]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="290" y="170" width="260" height="40" uuid="15ce830e-1105-4faa-9f48-b14b045a64af"/>
+				<textElement>
+					<font size="24"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{eventName}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="110" y="200" width="140" height="30" uuid="670aaf6b-1713-4d7b-959e-d06011ddc596"/>
+				<textElement>
+					<font size="18"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{eventDate}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="50" y="130" width="390" height="50" uuid="6b6b8686-49d7-4137-8d23-2148e0a881ff"/>
+				<textElement>
+					<font fontName="Big John" size="28"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{userName}]]></textFieldExpression>
+			</textField>
+		</band>
+	</background>
+</jasperReport>

@@ -15,5 +15,7 @@ public class ClubRequestDto {
     @Email(message = "If provided, admin email must be a valid format")
     private String adminEmail;
 
+    private String category;
+
     private String logoUrl;
 }

@@ -46,6 +46,7 @@ public class ClubService {
         club.setDescription(clubRequestDto.getDescription());
         club.setAdminId(adminUser.getId()); // Use the ID found via email
         club.setLogoUrl(clubRequestDto.getLogoUrl()); // Set logo URL
+        club.setCategory(clubRequestDto.getCategory());
 
         Club savedClub = clubRepository.save(club);
 
@@ -99,6 +100,9 @@ public class ClubService {
         
         club.setName(clubRequestDto.getName());
         club.setDescription(clubRequestDto.getDescription());
+        if (clubRequestDto.getCategory() != null) { // --- ADD THIS BLOCK ---
+            club.setCategory(clubRequestDto.getCategory());
+        }
         club.setAdminId(adminIdToSet); // Set potentially updated adminId
         club.setLogoUrl(clubRequestDto.getLogoUrl()); // Update logo URL
         
@@ -233,6 +237,7 @@ public class ClubService {
                 .logoUrl(club.getLogoUrl()) // Map logo URL
                 .createdAt(club.getCreatedAt())
                 .updatedAt(club.getUpdatedAt())
+                .category(club.getCategory())
                 .build();
     }
 
