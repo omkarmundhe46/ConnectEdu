@@ -20,5 +20,8 @@ public class ClubResponseDto {
     private LocalDateTime createdAt;
     private String category;
     private LocalDateTime updatedAt;
+
+    private String adminName;
+    private String adminEmail;
    
 }

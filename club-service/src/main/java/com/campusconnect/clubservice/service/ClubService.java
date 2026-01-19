@@ -227,17 +227,31 @@ public class ClubService {
         return member.getRole().name();
     }
 
-    // Update the mapping method to include adminId
     private ClubResponseDto mapToResponseDto(Club club) {
+        String adminName = "Unassigned";
+        String adminEmail = "N/A";
+
+        if (club.getAdminId() != null) {
+            try {
+                // Assuming you have a UserClient to fetch details
+                UserDto user = userClient.getUserById(club.getAdminId());
+                adminName = user.getName();
+                adminEmail = user.getEmail();
+            } catch (Exception e) {
+                // Fallback if user service is down or user not found
+                adminName = "Unknown (ID: " + club.getAdminId() + ")";
+            }
+        }
+
         return ClubResponseDto.builder()
                 .id(club.getId())
                 .name(club.getName())
                 .description(club.getDescription())
-                .adminId(club.getAdminId())
-                .logoUrl(club.getLogoUrl()) // Map logo URL
-                .createdAt(club.getCreatedAt())
-                .updatedAt(club.getUpdatedAt())
                 .category(club.getCategory())
+                .logoUrl(club.getLogoUrl())
+                .adminId(club.getAdminId())
+                .adminName(adminName)
+                .adminEmail(adminEmail)
                 .build();
     }
 
