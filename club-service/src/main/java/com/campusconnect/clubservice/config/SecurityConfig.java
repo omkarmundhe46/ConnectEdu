@@ -25,7 +25,9 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // --- APPLY THE SAME FIX ---
+
+                        .requestMatchers("/internal/**").permitAll()
+
                         .requestMatchers(
                                 new AntPathRequestMatcher("/internal/api/clubs/**")
                         ).permitAll()

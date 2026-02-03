@@ -52,62 +52,69 @@ public class ClubService {
 
         // --- AUTOMATIC ROLE PROMOTION ---
         // After creating the club, tell the user-service to promote the assigned admin.
-        UpdateUserRoleRequest roleRequest = new UpdateUserRoleRequest(
-                Role.CLUB_ADMIN,
-                savedClub.getId() // Pass the new club's ID
-        );
-        userClient.updateUserRole(savedClub.getAdminId(), roleRequest);
+//        UpdateUserRoleRequest roleRequest = new UpdateUserRoleRequest(
+//                Role.CLUB_ADMIN,
+//                savedClub.getId() // Pass the new club's ID
+//        );
+//        userClient.updateUserRole(savedClub.getAdminId(), roleRequest);
+//
+//        return mapToResponseDto(savedClub);
+        try {
+            UpdateUserRoleRequest roleRequest = new UpdateUserRoleRequest(Role.CLUB_ADMIN, savedClub.getId());
+            userClient.updateUserRole(savedClub.getAdminId(), roleRequest);
+        } catch (Exception e) {
+            // Log error but don't fail creation? Or handle transaction rollback
+            System.err.println("Failed to promote user role: " + e.getMessage());
+        }
 
-        return mapToResponseDto(savedClub);
+        // Return details with admin info fetched
+        return mapToResponseDto(savedClub, true);
     }
 
     public List<ClubResponseDto> getAllClubs() {
         return clubRepository.findAll().stream()
-                .map(this::mapToResponseDto)
+                // FALSE: Do NOT fetch admin details for the list view. This makes it INSTANT.
+                .map(club -> mapToResponseDto(club, false))
                 .collect(Collectors.toList());
     }
 
     public ClubResponseDto getClubById(Long id) {
         Club club = clubRepository.findById(id)
                 .orElseThrow(() -> new ClubNotFoundException("Club not found with id: " + id));
-        return mapToResponseDto(club);
+        // TRUE: Fetch admin details because it's a single detailed view.
+        return mapToResponseDto(club, true);
     }
 
     public ClubResponseDto updateClub(Long id, ClubRequestDto clubRequestDto) {
         Club club = clubRepository.findById(id)
                 .orElseThrow(() -> new ClubNotFoundException("Club not found with id: " + id));
 
-        // --- CHANGE: Find user by email (if email is provided for update) ---
-        Long adminIdToSet = club.getAdminId(); // Keep existing admin by default
+        Long adminIdToSet = club.getAdminId();
+
         if (clubRequestDto.getAdminEmail() != null && !clubRequestDto.getAdminEmail().isEmpty()) {
             try {
                 UserDto adminUser = userClient.getUserByEmail(clubRequestDto.getAdminEmail());
                 adminIdToSet = adminUser.getId();
 
-                // Promote the NEW admin if they are different
                 if (!adminIdToSet.equals(club.getAdminId())) {
                     UpdateUserRoleRequest roleRequest = new UpdateUserRoleRequest(Role.CLUB_ADMIN, id);
                     userClient.updateUserRole(adminIdToSet, roleRequest);
-                    // Consider demoting the old admin if needed? (More complex logic)
                 }
-
             } catch (FeignException.NotFound e) {
-                throw new UserNotFoundException("User with email not found: " + clubRequestDto.getAdminEmail());
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to verify admin user: " + e.getMessage());
+                throw new UserNotFoundException("User with email not found");
             }
         }
-        
+
         club.setName(clubRequestDto.getName());
         club.setDescription(clubRequestDto.getDescription());
-        if (clubRequestDto.getCategory() != null) { // --- ADD THIS BLOCK ---
+        if (clubRequestDto.getCategory() != null) {
             club.setCategory(clubRequestDto.getCategory());
         }
-        club.setAdminId(adminIdToSet); // Set potentially updated adminId
-        club.setLogoUrl(clubRequestDto.getLogoUrl()); // Update logo URL
-        
+        club.setAdminId(adminIdToSet);
+        club.setLogoUrl(clubRequestDto.getLogoUrl());
+
         Club updatedClub = clubRepository.save(club);
-        return mapToResponseDto(updatedClub);
+        return mapToResponseDto(updatedClub, true);
     }
 
     public void deleteClub(Long id) {
@@ -118,26 +125,21 @@ public class ClubService {
     }
 
     public ClubMemberResponseDto addMemberToClub(Long clubId, ClubMemberRequestDto memberRequestDto) {
-        // 1. Fetch the Club object (We need it to check the admin ID)
         Club club = clubRepository.findById(clubId)
                 .orElseThrow(() -> new ClubNotFoundException("Club not found with id: " + clubId));
 
-        // 2. Validate user exists by email
         UserDto user;
         try {
             user = userClient.getUserByEmail(memberRequestDto.getUserEmail());
         } catch (FeignException.NotFound e) {
-            throw new UserNotFoundException("User not found with email: " + memberRequestDto.getUserEmail());
+            throw new UserNotFoundException("User not found");
         }
 
-        // --- 3. NEW CHECK: Is this user the Admin of the club? ---
         if (club.getAdminId().equals(user.getId())) {
-            throw new DuplicateMembershipException("This user is the Club Admin and cannot be added as a member.");
+            throw new DuplicateMembershipException("User is Club Admin");
         }
-
-        // 4. Check if user is already a member
         if (clubMemberRepository.existsByClubIdAndUserId(clubId, user.getId())) {
-            throw new DuplicateMembershipException("User already member of this club");
+            throw new DuplicateMembershipException("User already member");
         }
 
         ClubMember member = new ClubMember();
@@ -147,9 +149,12 @@ public class ClubService {
 
         ClubMember savedMember = clubMemberRepository.save(member);
 
-        // 5. Promote role
-        UpdateUserRoleRequest roleRequest = new UpdateUserRoleRequest(Role.CLUB_MEMBER, null);
-        userClient.updateUserRole(savedMember.getUserId(), roleRequest);
+        try {
+            UpdateUserRoleRequest roleRequest = new UpdateUserRoleRequest(Role.CLUB_MEMBER, null);
+            userClient.updateUserRole(savedMember.getUserId(), roleRequest);
+        } catch (Exception e) {
+            System.err.println("Failed to update user role: " + e.getMessage());
+        }
 
         return mapToMemberResponseDto(savedMember);
     }
@@ -162,7 +167,8 @@ public class ClubService {
 
     public List<ClubResponseDto> searchClubs(String query) {
         return clubRepository.findByNameContainingIgnoreCase(query).stream()
-                .map(this::mapToResponseDto)
+                // FALSE: Search results usually don't need heavy admin details either
+                .map(club -> mapToResponseDto(club, false))
                 .collect(Collectors.toList());
     }
 
@@ -227,20 +233,22 @@ public class ClubService {
         return member.getRole().name();
     }
 
-    private ClubResponseDto mapToResponseDto(Club club) {
-        String adminName = "Unassigned";
-        String adminEmail = "N/A";
+    private ClubResponseDto mapToResponseDto(Club club, boolean fetchAdminDetails) {
+        String adminName = "Loading...";
+        String adminEmail = "";
 
-        if (club.getAdminId() != null) {
+        if (fetchAdminDetails && club.getAdminId() != null) {
             try {
-                // Assuming you have a UserClient to fetch details
                 UserDto user = userClient.getUserById(club.getAdminId());
                 adminName = user.getName();
                 adminEmail = user.getEmail();
             } catch (Exception e) {
-                // Fallback if user service is down or user not found
                 adminName = "Unknown (ID: " + club.getAdminId() + ")";
             }
+        } else {
+            // For list views, we don't want to make 50 HTTP calls.
+            adminName = "View Details";
+            adminEmail = "";
         }
 
         return ClubResponseDto.builder()

@@ -1,14 +1,23 @@
 package com.campusconnect.eventservice.client;
 
+import com.campusconnect.eventservice.dto.ChatClubDto;
 import com.campusconnect.eventservice.dto.ClubDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import java.util.List;
+
 @FeignClient(name = "club-service")
 public interface ClubClient {
-    @GetMapping("/api/clubs/{id}")
+//    @GetMapping("/api/clubs/{id}")
+//    ClubDto getClubById(@PathVariable("id") Long id);
+
+    @GetMapping("/internal/api/clubs/{id}")
     ClubDto getClubById(@PathVariable("id") Long id);
+
+    @GetMapping("/internal/chat/clubs/all")
+    List<ChatClubDto> getAllClubs();
 
     // ADD THIS NEW METHOD
     @GetMapping("/api/clubs/{clubId}/members/{userId}/check")

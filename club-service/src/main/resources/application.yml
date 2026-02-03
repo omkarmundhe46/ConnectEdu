@@ -13,6 +13,10 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+  cloud:
+    loadbalancer:
+      retry:
+        enabled: false
 
   # ADD THIS KAFKA SECTION
   kafka:

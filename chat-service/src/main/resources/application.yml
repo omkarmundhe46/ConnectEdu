@@ -1,0 +1,31 @@
+server:
+  port: 8089
+
+spring:
+  application:
+    name: chat-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/chat
+    username: root
+    password: OMKARm*@46!
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+application:
+  security:
+    jwt:
+      # MUST MATCH THE KEY FROM USER-SERVICE
+      secret-key: NjdFNkEzRDA3RTY4NkM1OUQxN0E5RkU4NzQ2Njg5QzI3MjgzNTZFRDE3RTFCOTE1RkY1NEZDRTE1NTYyN0IzNA==
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true

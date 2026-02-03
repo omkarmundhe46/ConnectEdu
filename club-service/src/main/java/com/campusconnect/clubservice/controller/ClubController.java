@@ -2,6 +2,8 @@ package com.campusconnect.clubservice.controller;
 
 import com.campusconnect.clubservice.client.UserClient;
 import com.campusconnect.clubservice.dto.*;
+import com.campusconnect.clubservice.entity.Club;
+import com.campusconnect.clubservice.repository.ClubRepository;
 import com.campusconnect.clubservice.service.ClubService;
 import com.campusconnect.clubservice.kafka.ClubKafkaProducer; // Import Kafka producer
 //import com.campusconnect.clubservice.client.NotificationClient;
@@ -20,6 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.security.oauth2.jwt.Jwt;
 @RestController
@@ -31,6 +34,7 @@ public class ClubController {
 	private final ClubService clubService;
 	private final ClubKafkaProducer clubKafkaProducer;
 	private final UserClient userClient;
+	private final ClubRepository clubRepository;
 
 	@PostMapping
 	@PreAuthorize("hasAuthority('ROLE_COLLEGE_ADMIN')") // Only College Admin can create
@@ -55,6 +59,9 @@ public class ClubController {
 
 		return ResponseEntity.ok(clubService.searchClubs(query));
 	}
+
+
+
 
 	private Long getAuthenticatedUserId() {
 		// ... (your standard JWT extraction logic) ...

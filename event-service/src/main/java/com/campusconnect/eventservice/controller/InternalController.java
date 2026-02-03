@@ -2,13 +2,18 @@ package com.campusconnect.eventservice.controller;
 
 import com.campusconnect.eventservice.dto.EventResponseDto;
 import com.campusconnect.eventservice.dto.ParticipantResponseDto;
+import com.campusconnect.eventservice.entity.Event;
+import com.campusconnect.eventservice.repository.EventRepository;
 import com.campusconnect.eventservice.service.EventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/internal/api/events") // A dedicated path for internal calls
@@ -16,6 +21,7 @@ import java.util.List;
 public class InternalController {
 
     private final EventService eventService;
+    private final EventRepository eventRepository;
 
     @GetMapping("/{eventId}/details")
     public ResponseEntity<EventResponseDto> getEventDetails(@PathVariable Long eventId) {
@@ -51,4 +57,7 @@ public class InternalController {
         List<EventResponseDto> events = eventService.getAllUpcomingEvents();
         return ResponseEntity.ok(events);
     }
+
+
+
 }
