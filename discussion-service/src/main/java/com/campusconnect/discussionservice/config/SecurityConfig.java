@@ -26,10 +26,9 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // --- THIS IS THE FIX ---
+
                         // We must permit the WebSocket handshake endpoint
                         .requestMatchers("/ws/**").permitAll()
-                        // --- END OF FIX ---
                         .requestMatchers(
                                 "/internal/api/discussions/**" // For the cleanup job
                         ).permitAll()

@@ -53,7 +53,7 @@ public class DiscussionController {
             // 1. Create a default UserDto
             UserDto defaultUser = new UserDto();
             defaultUser.setId(msg.getUserId());
-            defaultUser.setName("Unknown User");
+            defaultUser.setName("Unknown");
 
             // 2. Get the real user, or use the default
             UserDto user = userMap.getOrDefault(msg.getUserId(), defaultUser);

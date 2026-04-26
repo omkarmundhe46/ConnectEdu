@@ -1,6 +1,7 @@
 package com.campusconnect.userservice.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -32,6 +33,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String name;
 
+    @Email(
+            regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$",
+            message = "Invalid email format. Please use name@example.com"
+    )
     @Column(nullable = false, unique = true)
     private String email;
 

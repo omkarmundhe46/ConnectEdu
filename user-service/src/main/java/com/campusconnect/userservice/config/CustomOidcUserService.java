@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -54,6 +55,7 @@ public class CustomOidcUserService extends OidcUserService {
                     .providerId(providerId)
                     .role(Role.USER)
                     .isVerified(true)
+                    .password(UUID.randomUUID().toString())
                     .build();
         }
 

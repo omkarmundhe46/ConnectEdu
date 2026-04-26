@@ -1,0 +1,137 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - connectedu-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - connectedu-net
+
+  service-registry:
+    image: connectedu/service-registry:1.0
+    container_name: service-registry
+    ports:
+      - "8761:8761"
+    networks:
+      - connectedu-net
+
+  api-gateway:
+    image: connectedu/api-gateway:1.0
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
+    depends_on:
+      - service-registry
+    networks:
+      - connectedu-net
+
+  user-service:
+    image: connectedu/user-service:1.0
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
+      - SPRING_KAFKA_PRODUCER_BOOTSTRAPSERVERS=kafka:29092
+    depends_on:
+      - service-registry
+      - kafka
+    networks:
+      - connectedu-net
+
+  club-service:
+    image: connectedu/club-service:1.0
+    container_name: club-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - service-registry
+      - kafka
+    networks:
+      - connectedu-net
+
+  event-service:
+    image: connectedu/event-service:1.0
+    container_name: event-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - service-registry
+      - kafka
+    networks:
+      - connectedu-net
+
+  discussion-service:
+    image: connectedu/discussion-service:1.0
+    container_name: discussion-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - service-registry
+    networks:
+      - connectedu-net
+
+  notification-service:
+    image: connectedu/notification-service:1.0
+    container_name: notification-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      - service-registry
+      - kafka
+    networks:
+      - connectedu-net
+
+  certificate-service:
+    image: connectedu/certificate-service:1.0
+    container_name: certificate-service
+    ports:
+      - "8086:8086"
+    depends_on:
+      - service-registry
+      - kafka
+    networks:
+      - connectedu-net
+
+  payment-service:
+    image: connectedu/payment-service:1.0
+    container_name: payment-service
+    ports:
+      - "8088:8088"
+    depends_on:
+      - service-registry
+      - kafka
+    networks:
+      - connectedu-net
+
+  chat-service:
+    image: connectedu/chat-service:1.0
+    container_name: chat-service
+    ports:
+      - "8089:8089"
+    depends_on:
+      - service-registry
+    networks:
+      - connectedu-net
+
+networks:
+  connectedu-net:
+    driver: bridge

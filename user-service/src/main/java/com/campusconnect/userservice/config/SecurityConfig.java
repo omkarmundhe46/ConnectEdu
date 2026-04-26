@@ -37,12 +37,13 @@ public class SecurityConfig {
                                 "/internal/api/users/**",
                                 "/login/oauth2/**",
                                 "/oauth2/**",
-                                "/login"
+                                "/login",
+                                "/error"
                         ).permitAll()
 
                         .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
 
@@ -55,9 +56,10 @@ public class SecurityConfig {
                                 .oidcUserService(customOidcUserService)
                         )
                         .successHandler(oAuth2SuccessHandler)
+                        // --- UPDATED FAILURE HANDLER ---
                         .failureHandler((request, response, exception) -> {
-                            String baseUrl = request.getRequestURL().toString().split("/login/oauth2/code/facebook")[0];
-                            String targetUrl = baseUrl + "/auth/oauth-failure?error=" + exception.getLocalizedMessage();
+                            // Use a relative path. The browser will automatically prepend the correct Ngrok domain.
+                            String targetUrl = "/auth/oauth-failure?error=" + exception.getLocalizedMessage();
                             response.sendRedirect(targetUrl);
                         })
                 );

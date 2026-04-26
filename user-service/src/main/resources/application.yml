@@ -39,7 +39,7 @@ spring:
               - profile
               - openid
             #            redirect-uri: http://localhost:8080/login/oauth2/code/google
-            redirect-uri: https://toniest-wilda-unfabulously.ngrok-free.dev/login/oauth2/code/google
+            redirect-uri: "https://toniest-wilda-unfabulously.ngrok-free.dev/login/oauth2/code/google"
 
 
           facebook:
@@ -49,7 +49,7 @@ spring:
               - email
               - public_profile
             provider: facebook
-            redirect-uri: https://toniest-wilda-unfabulously.ngrok-free.dev/login/oauth2/code/facebook
+            redirect-uri: "https://toniest-wilda-unfabulously.ngrok-free.dev/login/oauth2/code/facebook"
 
         provider:
           facebook:
@@ -82,7 +82,12 @@ eureka:
 
 server:
   port: 8081
-  forward-headers-strategy: NATIVE
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        same-site: none  # CRITICAL: Tells Chrome not to drop the cookie on Google redirect
+        secure: true     # CRITICAL: Required when using same-site: none over Ngrok HTTPS
 
 
 logging:

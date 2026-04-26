@@ -29,7 +29,6 @@ public class WebSocketFeignInterceptor implements RequestInterceptor {
             }
         }
 
-        // --- THIS IS THE FIX ---
         // This is the fallback to get the token from a WebSocket context
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
             try {

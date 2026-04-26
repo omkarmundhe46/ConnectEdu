@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -79,6 +80,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                         .providerId(providerId)
                         .role(Role.USER)
                         .isVerified(true)
+                        .password(UUID.randomUUID().toString())
                         .build();
             }
 

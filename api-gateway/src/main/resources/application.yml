@@ -1,6 +1,6 @@
 server:
   port: 8080
-  forward-headers-strategy: native
+  forward-headers-strategy: framework
 
 eureka:
   instance:
@@ -21,6 +21,8 @@ spring:
           uri: lb://user-service
           predicates:
             - Path=/auth/**, /api/users/**, /internal/api/users/**, /oauth2/**, /login/oauth2/**, /login
+          filters:
+            - PreserveHostHeader # CRITICAL: Passes the Ngrok host to user-service
 
         - id: discussion-service-websocket
           uri: lb:ws://discussion-service # Note: 'lb:ws://'
