@@ -4,7 +4,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/discussion
     username: root
-    password: OMKARm*@46!
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -21,13 +21,11 @@ spring:
 application:
   security:
     jwt:
-      # PASTE THE EXACT SAME SECRET KEY FROM YOUR USER-SERVICE
-      secret-key: NjdFNkEzRDA3RTY4NkM1OUQxN0E5RkU4NzQ2Njg5QzI3MjgzNTZFRDE3RTFCOTE1RkY1NEZDRTE1NTYyN0IzNA==
-
+      secret-key: ${JWT_SECRET}
 
 eureka:
   instance:
-    prefer-ip-address: true # Add this line
+    prefer-ip-address: true
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka
@@ -40,11 +38,10 @@ CLUB_SERVICE_URL: http://localhost:8082
 EVENT_SERVICE_URL: http://localhost:8083
 NOTIFICATION_SERVICE_URL: http://localhost:8085
 
-
 aws:
-  region: ap-south-1 # The region you created your bucket in
+  region: ${AWS_REGION}
   s3:
-    bucket-name: connectedu-media # Your S3 bucket name
+    bucket-name: ${AWS_S3_BUCKET}
   credentials:
-    access-key: AKIAYQYUBDK4RVKIGINE # Your AWS Access Key
-    secret-key: ZrcjKG0eg8KDNMveZ3ngChfT2Yqh6IrKSmpOH4hQ # Your AWS Secret Key
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}

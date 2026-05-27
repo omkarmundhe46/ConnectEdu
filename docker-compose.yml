@@ -67,6 +67,12 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - SPRING_KAFKA_PRODUCER_BOOTSTRAPSERVERS=kafka:29092
       - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/user
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID}
+      - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET}
     depends_on:
       - service-registry
       - kafka
@@ -83,6 +89,8 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - SPRING_KAFKA_PRODUCER_BOOTSTRAPSERVERS=kafka:29092
       - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/club
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - service-registry
       - kafka
@@ -100,6 +108,8 @@ services:
       - SPRING_KAFKA_PRODUCER_BOOTSTRAPSERVERS=kafka:29092
       - SPRING_KAFKA_CONSUMER_BOOTSTRAPSERVERS=kafka:29092
       - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/event
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - service-registry
       - kafka
@@ -115,6 +125,12 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/discussion
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
     depends_on:
       - service-registry
     networks:
@@ -130,6 +146,10 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - SPRING_KAFKA_CONSUMER_BOOTSTRAPSERVERS=kafka:29092
       - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/notification
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
     depends_on:
       - service-registry
       - kafka
@@ -146,6 +166,11 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - SPRING_KAFKA_PRODUCER_BOOTSTRAPSERVERS=kafka:29092
       - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/certificate
+      - DB_PASSWORD=${DB_PASSWORD}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
     depends_on:
       - service-registry
       - kafka
@@ -161,13 +186,15 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - SPRING_KAFKA_PRODUCER_BOOTSTRAPSERVERS=kafka:29092
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
     depends_on:
       - service-registry
       - kafka
     networks:
       - connectedu-net
 
-  # 11. CHAT SERVICE
+  # 12. CHAT SERVICE
   chat-service:
     build: ./chat-service
     container_name: chat-service
@@ -176,12 +203,13 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/chat
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - service-registry
     networks:
       - connectedu-net
 
-# Define the custom network that all services will share
 networks:
   connectedu-net:
     driver: bridge
