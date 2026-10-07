@@ -330,8 +330,3 @@ If you like this project:
 * 🍴 Fork it
 * 🛠️ Contribute
 
----
-
-# 📜 License
-
-This project is licensed under the MIT License.
